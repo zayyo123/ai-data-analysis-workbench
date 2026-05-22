@@ -1,6 +1,16 @@
 import path from 'node:path'
 import { expect, test } from '@playwright/test'
 
+test('登录页可以一键填入演示账号', async ({ page }) => {
+  await page.goto('/login')
+
+  await expect(page.getByText('演示账号', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: '填入演示账号' }).click()
+
+  await expect(page.getByLabel('邮箱')).toHaveValue('demo@example.com')
+  await expect(page.getByLabel('密码')).toHaveValue('password123')
+})
+
 test('用户可以上传 CSV、添加推荐图表并生成 Mock AI 分析', async ({ page }) => {
   await page.goto('/')
 

@@ -19,6 +19,11 @@ const form = reactive({
   password: '',
 })
 
+function fillDemoAccount(): void {
+  form.email = 'demo@example.com'
+  form.password = 'password123'
+}
+
 async function submit(): Promise<void> {
   if (mode.value === 'register') {
     await authStore.register({
@@ -81,6 +86,22 @@ async function submit(): Promise<void> {
           type="error"
           :closable="false"
         />
+
+        <div
+          v-if="mode === 'login'"
+          class="demo-login"
+        >
+          <div>
+            <strong>演示账号</strong>
+            <p>先在后端执行 npm run seed:demo，即可直接体验云端项目和 Pro 套餐。</p>
+          </div>
+          <el-button
+            size="small"
+            @click="fillDemoAccount"
+          >
+            填入演示账号
+          </el-button>
+        </div>
 
         <div class="auth-actions">
           <el-button @click="router.push('/')">
@@ -155,6 +176,33 @@ async function submit(): Promise<void> {
   justify-content: flex-end;
   gap: 8px;
   margin-top: 16px;
+}
+
+.demo-login {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  background: #eff6ff;
+  padding: 12px;
+}
+
+.demo-login strong,
+.demo-login p {
+  margin: 0;
+}
+
+.demo-login strong {
+  color: #1e3a8a;
+}
+
+.demo-login p {
+  margin-top: 4px;
+  color: #475569;
+  font-size: 12px;
+  line-height: 1.6;
 }
 
 .auth-switch {
