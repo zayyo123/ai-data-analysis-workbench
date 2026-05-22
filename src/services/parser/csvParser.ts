@@ -27,7 +27,32 @@ export async function parseCsvFile(file: File): Promise<ParseResult> {
 
         resolve({ rows })
       },
-      error: (error) => reject(error),
+      error: (error: Error) => reject(error),
+    })
+  })
+}
+
+export async function parseCsvText(csvText: string): Promise<ParseResult> {
+  return new Promise((resolve, reject) => {
+    Papa.parse<Record<string, unknown>>(csvText, {
+      header: true,
+      skipEmptyLines: true,
+      dynamicTyping: false,
+      complete: (result) => {
+        if (result.errors.length > 0) {
+          reject(new Error(result.errors[0]?.message ?? 'CSV 解析失败'))
+          return
+        }
+
+        const rows = normalizeRows(result.data)
+        if (rows.length === 0 || Object.keys(rows[0] ?? {}).length === 0) {
+          reject(new Error('CSV 缺少有效表头'))
+          return
+        }
+
+        resolve({ rows })
+      },
+      error: (error: Error) => reject(error),
     })
   })
 }

@@ -2,6 +2,7 @@
 import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AiAnalysisPanel from '@/components/ai/AiAnalysisPanel.vue'
+import ChartConfigPanel from '@/components/chart/ChartConfigPanel.vue'
 import ChartRecommendationList from '@/components/chart/ChartRecommendationList.vue'
 import DataPreviewTable from '@/components/data-table/DataPreviewTable.vue'
 import FieldListPanel from '@/components/data-table/FieldListPanel.vue'
@@ -39,6 +40,15 @@ async function handleFileSelect(file: File): Promise<void> {
 
 function addRecommendation(recommendation: ChartRecommendation): void {
   dashboardStore.addChart(recommendation.config)
+  projectStore.saveCurrentProject(dashboardStore.dashboard)
+}
+
+function selectChart(chartId: string): void {
+  dashboardStore.selectedChartId = chartId
+}
+
+function updateChart(chartId: string, patch: Parameters<typeof dashboardStore.updateChart>[1]): void {
+  dashboardStore.updateChart(chartId, patch)
   projectStore.saveCurrentProject(dashboardStore.dashboard)
 }
 
@@ -135,7 +145,9 @@ function saveAiReport(): void {
         <DashboardCanvas
           :dashboard="dashboardStore.dashboard"
           :rows="dataset.rows"
+          :selected-chart-id="dashboardStore.selectedChartId"
           @remove="removeChart"
+          @select="selectChart"
           @filter="addFilter"
         />
       </main>
@@ -144,6 +156,11 @@ function saveAiReport(): void {
         <ChartRecommendationList
           :fields="dataset.fields"
           @add="addRecommendation"
+        />
+        <ChartConfigPanel
+          :chart="dashboardStore.selectedChart"
+          :fields="dataset.fields"
+          @update="updateChart"
         />
         <AiAnalysisPanel
           :output="aiStore.output"

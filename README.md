@@ -27,6 +27,19 @@ AI Data Analysis Workbench 是一个运行在浏览器端的数据分析应用�
 
 ## 功能总览
 
+### 当前已实现
+
+- 首页支持上传本地 CSV / Excel 文件。
+- 首页支持一键加载内置示例数据，无需手动选择文件即可体验完整流程。
+- 工作台支持字段识别、字段统计和字段类型手动修正。
+- 工作台支持前 100 行数据预览、关键词搜索和空值高亮。
+- 工作台支持按字段类型自动推荐图表，并一键添加到 Dashboard。
+- Dashboard 支持图表展示、删除、点击筛选和选中态。
+- 右侧图表配置面板支持编辑图表标题、图表类型、维度字段、数值字段、聚合方式、Top N 和排序。
+- AI 分析面板支持 Mock 流式输出、停止生成、清空和保存到报告。
+- 报告页支持 Markdown 结构化预览和 Markdown 文件导出。
+- 已补齐 Vitest 单元测试、Playwright E2E、GitHub Actions、示例数据和开源文档。
+
 ### 已规划核心功能
 
 - CSV 文件上传、校验、解析。
@@ -135,6 +148,23 @@ npm install -D @types/papaparse @types/file-saver
 ```bash
 npm run dev
 ```
+
+默认访问地址：
+
+```text
+http://127.0.0.1:5173
+```
+
+如果本机端口已被占用，可以指定新端口：
+
+```bash
+npm run dev -- --port 5174
+```
+
+打开首页后可以选择两种方式体验：
+
+- 点击上传区选择 `examples/sales.csv` 或自己的 CSV / Excel 文件。
+- 点击首页“示例数据”中的“销售经营分析”或“用户增长分析”，直接进入工作台。
 
 生产构建：
 
@@ -1833,7 +1863,12 @@ const count = 0
 
 ## 示例数据
 
-创建 `examples/sales.csv`：
+仓库已经内置示例数据，并且首页可以一键加载：
+
+- `examples/sales.csv`：销售经营分析。
+- `examples/users.csv`：用户增长分析。
+
+`examples/sales.csv` 内容：
 
 ```csv
 订单日期,地区,品类,销售额,利润,客户类型

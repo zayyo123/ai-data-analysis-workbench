@@ -4,6 +4,7 @@ dist-ssr
 coverage
 playwright-report
 test-results
+test-results/
 .env
 .env.local
 .DS_Store

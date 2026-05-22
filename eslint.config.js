@@ -4,7 +4,7 @@ import tseslint from 'typescript-eslint'
 
 export default [
   {
-    ignores: ['dist/**', 'node_modules/**', 'coverage/**', 'playwright-report/**'],
+    ignores: ['dist/**', 'node_modules/**', 'coverage/**', 'playwright-report/**', 'test-results/**'],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
@@ -18,6 +18,7 @@ export default [
     },
     rules: {
       'vue/multi-word-component-names': 'off',
+      'vue/no-v-html': 'off',
       '@typescript-eslint/no-explicit-any': 'error',
     },
   },

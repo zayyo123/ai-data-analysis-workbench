@@ -6,10 +6,12 @@ import ChartRenderer from '@/components/chart/ChartRenderer.vue'
 defineProps<{
   dashboard: DashboardConfig
   rows: DataRow[]
+  selectedChartId?: string
 }>()
 
 const emit = defineEmits<{
   remove: [chartId: string]
+  select: [chartId: string]
   filter: [filter: FilterCondition]
 }>()
 </script>
@@ -41,6 +43,8 @@ const emit = defineEmits<{
           :key="chart.id"
           data-testid="dashboard-chart-card"
           class="panel chart-card"
+          :class="{ active: chart.id === selectedChartId }"
+          @click="emit('select', chart.id)"
         >
           <div class="panel-header">
             <h3 class="panel-title">
@@ -50,7 +54,7 @@ const emit = defineEmits<{
               size="small"
               text
               type="danger"
-              @click="emit('remove', chart.id)"
+              @click.stop="emit('remove', chart.id)"
             >
               删除
             </el-button>
@@ -73,5 +77,17 @@ const emit = defineEmits<{
 .dashboard-desc {
   margin: 4px 0 0;
   font-size: 12px;
+}
+
+.chart-card {
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.chart-card.active {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgb(37 99 235 / 12%);
 }
 </style>

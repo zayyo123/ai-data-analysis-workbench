@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import FileDropzone from '@/components/upload/FileDropzone.vue'
+import { sampleDatasets, type SampleDataset } from '@/data/sampleDatasets'
 import { useDashboardStore } from '@/stores/dashboardStore'
 import { useDatasetStore } from '@/stores/datasetStore'
 import { useProjectStore } from '@/stores/projectStore'
@@ -14,8 +15,25 @@ async function handleFileSelect(file: File): Promise<void> {
   await datasetStore.parseFile(file)
   if (!datasetStore.currentDataset) return
 
+  await createProjectFromCurrentDataset()
+}
+
+async function loadSampleDataset(sample: SampleDataset): Promise<void> {
+  await datasetStore.loadCsvText(sample.csv, sample.fileName, sample.name)
+  if (!datasetStore.currentDataset) return
+
+  await createProjectFromCurrentDataset()
+}
+
+async function createProjectFromCurrentDataset(): Promise<void> {
+  if (!datasetStore.currentDataset) return
+
   dashboardStore.resetDashboard(`${datasetStore.currentDataset.name} 分析看板`)
-  const project = projectStore.createProject(datasetStore.currentDataset.name, datasetStore.currentDataset.id, dashboardStore.dashboard)
+  const project = projectStore.createProject(
+    datasetStore.currentDataset.name,
+    datasetStore.currentDataset.id,
+    dashboardStore.dashboard,
+  )
   await router.push(`/workbench/${project.id}`)
 }
 
@@ -94,6 +112,26 @@ function openProject(projectId: string): void {
           </div>
         </div>
       </div>
+
+      <div class="panel sample-panel">
+        <div class="panel-header">
+          <h2 class="panel-title">
+            示例数据
+          </h2>
+          <span class="muted">一键体验</span>
+        </div>
+        <div class="panel-body sample-grid">
+          <button
+            v-for="sample in sampleDatasets"
+            :key="sample.fileName"
+            class="sample-card"
+            @click="loadSampleDataset(sample)"
+          >
+            <strong>{{ sample.name }}</strong>
+            <span>{{ sample.description }}</span>
+          </button>
+        </div>
+      </div>
     </section>
   </main>
 </template>
@@ -103,6 +141,16 @@ function openProject(projectId: string): void {
   display: grid;
   grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.7fr);
   gap: 16px;
+}
+
+.sample-panel {
+  grid-column: 1 / -1;
+}
+
+.sample-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
 }
 
 .upload-error {
@@ -135,6 +183,30 @@ function openProject(projectId: string): void {
 .project-item span {
   color: #6b7280;
   font-size: 12px;
+}
+
+.sample-card {
+  display: flex;
+  min-height: 104px;
+  cursor: pointer;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 14px;
+  text-align: left;
+}
+
+.sample-card:hover {
+  border-color: #2563eb;
+  background: #f8fbff;
+}
+
+.sample-card span {
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.6;
 }
 
 @media (max-width: 900px) {

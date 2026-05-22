@@ -13,7 +13,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "e2e": "playwright test",
-    "lint": "eslint . --fix",
+    "lint": "eslint src e2e *.config.* --fix",
     "format": "prettier --write ."
   },
   "dependencies": {
