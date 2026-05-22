@@ -35,6 +35,12 @@ export async function getRemoteDataset(datasetId: string): Promise<Dataset> {
   return normalizeServerDataset(response.dataset)
 }
 
+export function deleteRemoteDataset(datasetId: string): Promise<{ ok: true }> {
+  return apiRequest<{ ok: true }>(`/datasets/${datasetId}`, {
+    method: 'DELETE',
+  })
+}
+
 export function normalizeServerDataset(dataset: ServerDataset): Dataset {
   return {
     id: dataset.id,

@@ -6,7 +6,7 @@ import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 import UsagePlanCard from '@/components/billing/UsagePlanCard.vue'
 import FileDropzone from '@/components/upload/FileDropzone.vue'
 import { sampleDatasets, type SampleDataset } from '@/data/sampleDatasets'
-import { createRemoteDataset } from '@/services/api/datasetApi'
+import { createRemoteDataset, deleteRemoteDataset } from '@/services/api/datasetApi'
 import { ApiError, getApiErrorMessage, isUnauthorizedApiError } from '@/services/api/httpClient'
 import { createRemoteProject } from '@/services/api/projectApi'
 import { useAuthStore } from '@/stores/authStore'
@@ -58,8 +58,12 @@ async function createProjectFromCurrentDataset(): Promise<void> {
   dashboardStore.resetDashboard(`${datasetStore.currentDataset.name} 分析看板`)
 
   if (authStore.isAuthenticated) {
+    let remoteDatasetId = ''
+    const localDatasetId = datasetStore.currentDataset.id
+
     try {
       const remoteDataset = await createRemoteDataset(datasetStore.currentDataset)
+      remoteDatasetId = remoteDataset.id
       datasetStore.updateDatasetId(remoteDataset.id)
       const remoteProject = await createRemoteProject({
         name: datasetStore.currentDataset.name,
@@ -71,6 +75,16 @@ async function createProjectFromCurrentDataset(): Promise<void> {
       await router.push(`/workbench/${remoteProject.id}`)
       return
     } catch (caughtError) {
+      if (remoteDatasetId) {
+        // 项目创建失败时清理刚写入的云端数据集，避免额度限制或网络错误留下不可见的孤立数据。
+        try {
+          await deleteRemoteDataset(remoteDatasetId)
+        } catch {
+          // 清理失败不阻断本地兜底；后端级回收可以在后续任务中通过孤立数据集清理器补强。
+        }
+        datasetStore.updateDatasetId(localDatasetId)
+      }
+
       if (isUnauthorizedApiError(caughtError)) {
         authStore.logout()
       }
