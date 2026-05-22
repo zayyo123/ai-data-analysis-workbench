@@ -86,6 +86,11 @@ export const useAiStore = defineStore('ai', () => {
     error.value = ''
   }
 
+  function loadReport(report: AiReport): void {
+    output.value = report.content
+    error.value = ''
+  }
+
   return {
     output,
     generating,
@@ -94,6 +99,7 @@ export const useAiStore = defineStore('ai', () => {
     generateAnalysis,
     stopGeneration,
     saveCurrentReport,
+    loadReport,
     clearCurrentOutput,
   }
 })

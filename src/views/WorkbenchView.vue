@@ -3,6 +3,7 @@ import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import AiAnalysisPanel from '@/components/ai/AiAnalysisPanel.vue'
+import UsagePlanCard from '@/components/billing/UsagePlanCard.vue'
 import ChartConfigPanel from '@/components/chart/ChartConfigPanel.vue'
 import ChartRecommendationList from '@/components/chart/ChartRecommendationList.vue'
 import DataPreviewTable from '@/components/data-table/DataPreviewTable.vue'
@@ -43,6 +44,7 @@ async function restoreProjectContext(): Promise<void> {
   if (projectStore.currentProject) {
     dashboardStore.replaceDashboard(projectStore.currentProject.dashboard)
     await restoreProjectDataset(projectStore.currentProject.datasetId)
+    await projectStore.refreshCurrentReports()
   }
 }
 
@@ -199,10 +201,16 @@ function saveAiReport(): void {
           :generating="aiStore.generating"
           :can-save="aiStore.canSave"
           :error="aiStore.error"
+          :reports="projectStore.currentProject?.aiReports"
           @generate="aiStore.generateAnalysis"
           @stop="aiStore.stopGeneration"
           @save="saveAiReport"
+          @load-report="aiStore.loadReport"
           @clear="aiStore.clearCurrentOutput"
+        />
+        <UsagePlanCard
+          :user="authStore.user"
+          :usage="authStore.usage"
         />
       </aside>
     </section>

@@ -1,9 +1,12 @@
 <script setup lang="ts">
+import type { AiReport } from '@/types/project'
+
 defineProps<{
   output: string
   generating: boolean
   canSave: boolean
   error?: string
+  reports?: AiReport[]
 }>()
 
 const emit = defineEmits<{
@@ -11,6 +14,7 @@ const emit = defineEmits<{
   stop: []
   save: []
   clear: []
+  loadReport: [report: AiReport]
 }>()
 </script>
 
@@ -69,6 +73,24 @@ const emit = defineEmits<{
           清空
         </el-button>
       </div>
+
+      <div
+        v-if="reports?.length"
+        class="report-list"
+      >
+        <p class="muted report-list-title">
+          已保存报告
+        </p>
+        <button
+          v-for="report in reports.slice(0, 5)"
+          :key="report.id"
+          class="report-item"
+          @click="emit('loadReport', report)"
+        >
+          <strong>{{ report.promptTitle }}</strong>
+          <span>{{ new Date(report.createdAt).toLocaleString() }}</span>
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -92,5 +114,38 @@ pre {
   font-family: inherit;
   font-size: 13px;
   line-height: 1.7;
+}
+
+.report-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.report-list-title {
+  margin: 0;
+  font-size: 12px;
+}
+
+.report-item {
+  display: flex;
+  cursor: pointer;
+  flex-direction: column;
+  gap: 3px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 10px;
+  text-align: left;
+}
+
+.report-item:hover {
+  border-color: #0f766e;
+}
+
+.report-item span {
+  color: #6b7280;
+  font-size: 12px;
 }
 </style>

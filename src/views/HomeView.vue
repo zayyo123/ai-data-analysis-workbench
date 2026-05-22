@@ -2,6 +2,7 @@
 import { onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import UsagePlanCard from '@/components/billing/UsagePlanCard.vue'
 import FileDropzone from '@/components/upload/FileDropzone.vue'
 import { sampleDatasets, type SampleDataset } from '@/data/sampleDatasets'
 import { createRemoteDataset } from '@/services/api/datasetApi'
@@ -187,6 +188,11 @@ function logout(): void {
           </div>
         </div>
       </div>
+
+      <UsagePlanCard
+        :user="authStore.user"
+        :usage="authStore.usage"
+      />
 
       <div class="panel sample-panel">
         <div class="panel-header">

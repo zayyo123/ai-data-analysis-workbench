@@ -90,6 +90,14 @@ describe('full-stack API MVP', () => {
     expect(aiResponse.statusCode).toBe(200)
     expect(aiResponse.json<{ report: { content: string } }>().report.content).toContain('核心发现')
 
+    const reportsResponse = await app.inject({
+      method: 'GET',
+      url: `/api/reports/${projectId}`,
+      headers: { authorization: authHeader },
+    })
+    expect(reportsResponse.statusCode).toBe(200)
+    expect(reportsResponse.json<{ reports: unknown[] }>().reports).toHaveLength(1)
+
     const usageResponse = await app.inject({
       method: 'GET',
       url: '/api/billing/usage',
