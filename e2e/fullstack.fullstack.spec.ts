@@ -25,10 +25,17 @@ test('登录用户可以保存云端项目、生成报告并读回用量', async
   await expect(page.getByText('今日 AI 分析额度')).toBeVisible()
   await expect(page.getByText('已保存报告')).toBeVisible()
 
+  await page.getByRole('button', { name: '升级 Pro' }).click()
+  await expect(page.getByText('已升级到 PRO 套餐')).toBeVisible()
+  await expect(page.locator('.el-tag__content').filter({ hasText: /^PRO$/ })).toBeVisible()
+  await expect(page.getByText('不限次').first()).toBeVisible()
+  await expect(page.getByRole('button', { name: '当前套餐' })).toBeDisabled()
+
   await page.getByRole('button', { name: '返回首页' }).click()
   await expect(page.getByText('最近项目')).toBeVisible()
   await page.reload()
   await expect(page.getByText(email)).toBeVisible()
+  await expect(page.getByText('PRO 套餐：AI 不限次')).toBeVisible()
   await expect(page.getByText('最近项目')).toBeVisible()
   await page.getByRole('button', { name: /销售经营分析/ }).first().click()
 
