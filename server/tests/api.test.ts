@@ -60,6 +60,22 @@ describe('full-stack API MVP', () => {
     expect(projectResponse.statusCode).toBe(200)
     const projectId = projectResponse.json<{ project: { id: string } }>().project.id
 
+    const datasetDetailResponse = await app.inject({
+      method: 'GET',
+      url: `/api/datasets/${datasetId}`,
+      headers: { authorization: authHeader },
+    })
+    expect(datasetDetailResponse.statusCode).toBe(200)
+    expect(datasetDetailResponse.json<{ dataset: { sampleRows: unknown[] } }>().dataset.sampleRows).toHaveLength(1)
+
+    const projectDetailResponse = await app.inject({
+      method: 'GET',
+      url: `/api/projects/${projectId}`,
+      headers: { authorization: authHeader },
+    })
+    expect(projectDetailResponse.statusCode).toBe(200)
+    expect(projectDetailResponse.json<{ project: { dashboard: { charts: unknown[] } } }>().project.dashboard.charts).toEqual([])
+
     const aiResponse = await app.inject({
       method: 'POST',
       url: '/api/ai/analyze',

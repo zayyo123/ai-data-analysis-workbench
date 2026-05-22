@@ -78,6 +78,11 @@ export const useDatasetStore = defineStore('dataset', () => {
     currentDataset.value.updatedAt = Date.now()
   }
 
+  function setCurrentDataset(dataset: Dataset): void {
+    currentDataset.value = dataset
+    error.value = ''
+  }
+
   return {
     currentDataset,
     loading,
@@ -87,6 +92,7 @@ export const useDatasetStore = defineStore('dataset', () => {
     loadCsvText,
     updateFieldType,
     updateDatasetId,
+    setCurrentDataset,
     clearDataset,
   }
 })

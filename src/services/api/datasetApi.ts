@@ -29,3 +29,23 @@ export async function createRemoteDataset(dataset: Dataset): Promise<ServerDatas
 
   return response.dataset
 }
+
+export async function getRemoteDataset(datasetId: string): Promise<Dataset> {
+  const response = await apiRequest<{ dataset: ServerDataset }>(`/datasets/${datasetId}`)
+  return normalizeServerDataset(response.dataset)
+}
+
+export function normalizeServerDataset(dataset: ServerDataset): Dataset {
+  return {
+    id: dataset.id,
+    name: dataset.name,
+    fileName: dataset.fileName,
+    fileType: dataset.fileType,
+    fields: dataset.fields,
+    // 后端 MVP 为控制 SQLite 体积只保存样本行；恢复项目时用样本快照支撑预览、图表和报告。
+    rows: dataset.sampleRows,
+    rowCount: dataset.rowCount,
+    createdAt: new Date(dataset.createdAt).getTime(),
+    updatedAt: new Date(dataset.updatedAt).getTime(),
+  }
+}

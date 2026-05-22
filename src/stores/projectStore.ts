@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { listRemoteProjects, updateRemoteProject } from '@/services/api/projectApi'
+import { getRemoteProject, listRemoteProjects, updateRemoteProject } from '@/services/api/projectApi'
 import type { DashboardConfig } from '@/types/chart'
 import type { AiReport, AnalysisProject } from '@/types/project'
 import { loadProjects, saveProjects } from '@/services/storage/projectStorage'
@@ -68,6 +68,18 @@ export const useProjectStore = defineStore('project', () => {
     }
   }
 
+  async function loadRemoteProject(projectId: string): Promise<void> {
+    const authStore = useAuthStore()
+    if (!authStore.isAuthenticated) return
+
+    syncError.value = ''
+    try {
+      upsertProject(await getRemoteProject(projectId))
+    } catch (caughtError) {
+      syncError.value = caughtError instanceof Error ? caughtError.message : '远程项目读取失败'
+    }
+  }
+
   async function syncCurrentProject(): Promise<void> {
     const authStore = useAuthStore()
     if (!authStore.isAuthenticated || !currentProject.value) return
@@ -107,6 +119,7 @@ export const useProjectStore = defineStore('project', () => {
     addAiReport,
     upsertProject,
     refreshRemoteProjects,
+    loadRemoteProject,
     syncCurrentProject,
     deleteProject,
   }

@@ -65,6 +65,11 @@ export const useDashboardStore = defineStore('dashboard', () => {
     }
   }
 
+  function replaceDashboard(nextDashboard: DashboardConfig): void {
+    dashboard.value = JSON.parse(JSON.stringify(nextDashboard)) as DashboardConfig
+    selectedChartId.value = dashboard.value.charts[0]?.id ?? ''
+  }
+
   watch(
     dashboard,
     (value) => {
@@ -84,6 +89,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
     removeFilter,
     clearFilters,
     resetDashboard,
+    replaceDashboard,
   }
 })
 

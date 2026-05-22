@@ -58,6 +58,11 @@ export async function listRemoteProjects(): Promise<AnalysisProject[]> {
   return response.projects.map(normalizeServerProject)
 }
 
+export async function getRemoteProject(projectId: string): Promise<AnalysisProject> {
+  const response = await apiRequest<{ project: ServerProject }>(`/projects/${projectId}`)
+  return normalizeServerProject(response.project)
+}
+
 export function normalizeServerProject(project: ServerProject): AnalysisProject {
   return {
     id: project.id,

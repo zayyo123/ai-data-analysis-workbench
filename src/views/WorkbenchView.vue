@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import AiAnalysisPanel from '@/components/ai/AiAnalysisPanel.vue'
 import ChartConfigPanel from '@/components/chart/ChartConfigPanel.vue'
 import ChartRecommendationList from '@/components/chart/ChartRecommendationList.vue'
@@ -9,6 +10,8 @@ import FieldListPanel from '@/components/data-table/FieldListPanel.vue'
 import DashboardCanvas from '@/components/dashboard/DashboardCanvas.vue'
 import FilterBar from '@/components/dashboard/FilterBar.vue'
 import FileDropzone from '@/components/upload/FileDropzone.vue'
+import { getRemoteDataset } from '@/services/api/datasetApi'
+import { useAuthStore } from '@/stores/authStore'
 import { useAiStore } from '@/stores/aiStore'
 import { useDashboardStore } from '@/stores/dashboardStore'
 import { useDatasetStore } from '@/stores/datasetStore'
@@ -17,6 +20,7 @@ import type { ChartRecommendation, FilterCondition } from '@/types/chart'
 
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore()
 const aiStore = useAiStore()
 const datasetStore = useDatasetStore()
 const dashboardStore = useDashboardStore()
@@ -25,9 +29,34 @@ const projectStore = useProjectStore()
 const dataset = computed(() => datasetStore.currentDataset)
 
 onMounted(() => {
+  void restoreProjectContext()
+})
+
+async function restoreProjectContext(): Promise<void> {
   const projectId = String(route.params.projectId)
   projectStore.loadProject(projectId)
-})
+
+  if (authStore.isAuthenticated) {
+    await projectStore.loadRemoteProject(projectId)
+  }
+
+  if (projectStore.currentProject) {
+    dashboardStore.replaceDashboard(projectStore.currentProject.dashboard)
+    await restoreProjectDataset(projectStore.currentProject.datasetId)
+  }
+}
+
+async function restoreProjectDataset(datasetId: string): Promise<void> {
+  if (datasetStore.currentDataset?.id === datasetId) return
+  if (!authStore.isAuthenticated) return
+
+  try {
+    datasetStore.setCurrentDataset(await getRemoteDataset(datasetId))
+  } catch (caughtError) {
+    const message = caughtError instanceof Error ? caughtError.message : '远程数据集读取失败'
+    ElMessage.warning(`${message}，请重新上传数据文件`)
+  }
+}
 
 async function handleFileSelect(file: File): Promise<void> {
   await datasetStore.parseFile(file)
@@ -81,6 +110,9 @@ function saveAiReport(): void {
         </h1>
         <p class="brand-subtitle">
           {{ dataset?.fileName ?? '请上传 CSV / Excel 文件开始分析' }}
+          <span v-if="dataset && dataset.rows.length < dataset.rowCount">
+            · 云端快照 {{ dataset.rows.length }}/{{ dataset.rowCount }} 行
+          </span>
         </p>
       </div>
       <div class="toolbar">
