@@ -8,7 +8,7 @@
     "start": "node dist/server.js",
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "test": "dotenv -e .env.example -- prisma generate && dotenv -e .env.example -- prisma db push --skip-generate && dotenv -e .env.example -- vitest run",
+    "test": "dotenv -e .env.example -- prisma generate && dotenv -e .env.example -- vitest run",
     "prisma:generate": "dotenv -e .env.example -- prisma generate",
     "prisma:migrate": "dotenv -e .env.example -- prisma migrate dev",
     "prisma:studio": "dotenv -e .env.example -- prisma studio"

@@ -5,6 +5,13 @@ import ElementPlus from 'element-plus'
 import { createApp } from 'vue'
 import { pinia } from '@/app/pinia'
 import { router } from '@/app/router'
+import { useAuthStore } from '@/stores/authStore'
 import App from './App.vue'
 
-createApp(App).use(pinia).use(router).use(ElementPlus).mount('#app')
+const app = createApp(App)
+
+app.use(pinia).use(router).use(ElementPlus)
+
+void useAuthStore().restoreSession()
+
+app.mount('#app')

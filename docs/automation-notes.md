@@ -22,6 +22,12 @@
 - 已验证 `prisma validate` 通过，schema 本身有效。
 - 已尝试相对 SQLite 路径和 ASCII 临时目录 SQLite 路径，仍然触发同样的 schema engine 空错误。
 
+本地缓解：
+
+- 后端 `npm run test` 已改为 `prisma generate + vitest`。
+- 测试环境通过 `tests/setupTestDatabase.ts` 用 SQL 创建最小 SQLite 表结构。
+- 这样 API 集成测试仍然覆盖 Prisma Client 调用链路，但不依赖当前机器上失败的 `db push`。
+
 下一步建议：
 
 1. 在非中文路径临时 clone 中验证 `prisma db push`。

@@ -1,15 +1,36 @@
 <script setup lang="ts">
+import { onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import FileDropzone from '@/components/upload/FileDropzone.vue'
 import { sampleDatasets, type SampleDataset } from '@/data/sampleDatasets'
+import { createRemoteDataset } from '@/services/api/datasetApi'
+import { createRemoteProject } from '@/services/api/projectApi'
+import { useAuthStore } from '@/stores/authStore'
 import { useDashboardStore } from '@/stores/dashboardStore'
 import { useDatasetStore } from '@/stores/datasetStore'
 import { useProjectStore } from '@/stores/projectStore'
 
 const router = useRouter()
+const authStore = useAuthStore()
 const datasetStore = useDatasetStore()
 const dashboardStore = useDashboardStore()
 const projectStore = useProjectStore()
+
+onMounted(() => {
+  if (authStore.isAuthenticated) {
+    void projectStore.refreshRemoteProjects()
+  }
+})
+
+watch(
+  () => authStore.isAuthenticated,
+  (isAuthenticated) => {
+    if (isAuthenticated) {
+      void projectStore.refreshRemoteProjects()
+    }
+  },
+)
 
 async function handleFileSelect(file: File): Promise<void> {
   await datasetStore.parseFile(file)
@@ -29,17 +50,38 @@ async function createProjectFromCurrentDataset(): Promise<void> {
   if (!datasetStore.currentDataset) return
 
   dashboardStore.resetDashboard(`${datasetStore.currentDataset.name} 分析看板`)
-  const project = projectStore.createProject(
-    datasetStore.currentDataset.name,
-    datasetStore.currentDataset.id,
-    dashboardStore.dashboard,
-  )
+
+  if (authStore.isAuthenticated) {
+    try {
+      const remoteDataset = await createRemoteDataset(datasetStore.currentDataset)
+      datasetStore.updateDatasetId(remoteDataset.id)
+      const remoteProject = await createRemoteProject({
+        name: datasetStore.currentDataset.name,
+        datasetId: remoteDataset.id,
+        dashboard: dashboardStore.dashboard,
+      })
+      projectStore.upsertProject(remoteProject)
+      await authStore.refreshUsage()
+      await router.push(`/workbench/${remoteProject.id}`)
+      return
+    } catch (caughtError) {
+      const message = caughtError instanceof Error ? caughtError.message : '服务端同步失败'
+      ElMessage.warning(`${message}，已切换为本地演示模式`)
+    }
+  }
+
+  const project = projectStore.createProject(datasetStore.currentDataset.name, datasetStore.currentDataset.id, dashboardStore.dashboard)
   await router.push(`/workbench/${project.id}`)
 }
 
 function openProject(projectId: string): void {
   projectStore.loadProject(projectId)
   void router.push(`/workbench/${projectId}`)
+}
+
+function logout(): void {
+  authStore.logout()
+  ElMessage.success('已退出登录')
 }
 </script>
 
@@ -51,15 +93,40 @@ function openProject(projectId: string): void {
           AI Data Analysis Workbench
         </h1>
         <p class="brand-subtitle">
-          上传数据，生成图表，看 AI 分析，导出报告
+          上传数据，生成图表，查看 AI 分析，导出报告
         </p>
       </div>
-      <el-link
-        href="https://github.com"
-        target="_blank"
-      >
-        GitHub
-      </el-link>
+      <div class="toolbar">
+        <el-tag
+          v-if="authStore.isAuthenticated"
+          type="success"
+        >
+          {{ authStore.usageLabel }}
+        </el-tag>
+        <template v-if="authStore.isAuthenticated">
+          <span class="muted">{{ authStore.user?.email }}</span>
+          <el-button @click="logout">
+            退出
+          </el-button>
+        </template>
+        <template v-else>
+          <el-button @click="router.push('/login')">
+            登录
+          </el-button>
+          <el-button
+            type="primary"
+            @click="router.push('/register')"
+          >
+            注册
+          </el-button>
+        </template>
+        <el-link
+          href="https://github.com/zayyo123/ai-data-analysis-workbench"
+          target="_blank"
+        >
+          GitHub
+        </el-link>
+      </div>
     </header>
 
     <section class="page home-grid">
@@ -68,6 +135,7 @@ function openProject(projectId: string): void {
           <h2 class="panel-title">
             开始分析
           </h2>
+          <span class="muted">{{ authStore.isAuthenticated ? '云端保存已开启' : '未登录时使用本地模式' }}</span>
         </div>
         <div class="panel-body">
           <FileDropzone
@@ -92,6 +160,13 @@ function openProject(projectId: string): void {
           <span class="muted">{{ projectStore.projects.length }} 个</span>
         </div>
         <div class="panel-body">
+          <el-alert
+            v-if="projectStore.syncError"
+            class="upload-error"
+            :title="projectStore.syncError"
+            type="warning"
+            :closable="false"
+          />
           <el-empty
             v-if="projectStore.projects.length === 0"
             description="上传数据后会自动创建项目"
@@ -118,7 +193,7 @@ function openProject(projectId: string): void {
           <h2 class="panel-title">
             示例数据
           </h2>
-          <span class="muted">一键体验</span>
+          <span class="muted">一键体验完整链路</span>
         </div>
         <div class="panel-body sample-grid">
           <button

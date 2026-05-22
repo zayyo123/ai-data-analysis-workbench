@@ -1,7 +1,9 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import { generateRemoteAnalysis } from '@/services/api/aiApi'
 import { createAiClient } from '@/services/ai/aiClient'
 import { buildAnalysisPrompt } from '@/services/ai/promptBuilder'
+import { useAuthStore } from '@/stores/authStore'
 import { useDashboardStore } from '@/stores/dashboardStore'
 import { useDatasetStore } from '@/stores/datasetStore'
 import { useProjectStore } from '@/stores/projectStore'
@@ -17,8 +19,10 @@ export const useAiStore = defineStore('ai', () => {
   const canSave = computed(() => output.value.trim().length > 0 && !generating.value)
 
   async function generateAnalysis(): Promise<void> {
+    const authStore = useAuthStore()
     const datasetStore = useDatasetStore()
     const dashboardStore = useDashboardStore()
+    const projectStore = useProjectStore()
     if (!datasetStore.currentDataset) {
       error.value = '请先上传数据集'
       return
@@ -30,6 +34,18 @@ export const useAiStore = defineStore('ai', () => {
     abortController.value = new AbortController()
 
     try {
+      if (authStore.isAuthenticated && projectStore.currentProject) {
+        const report = await generateRemoteAnalysis({
+          projectId: projectStore.currentProject.id,
+          dataset: datasetStore.currentDataset,
+          dashboard: dashboardStore.dashboard,
+        })
+        output.value = report.content
+        projectStore.addAiReport(report)
+        await authStore.refreshUsage()
+        return
+      }
+
       const prompt = buildAnalysisPrompt(datasetStore.currentDataset, dashboardStore.dashboard)
       const client = createAiClient()
 
