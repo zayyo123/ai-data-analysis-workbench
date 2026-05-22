@@ -5,7 +5,11 @@ coverage
 playwright-report
 test-results
 test-results/
+.automation/
 .env
 .env.local
 .DS_Store
 *.local
+*.db
+*.db-journal
+server/dist/
