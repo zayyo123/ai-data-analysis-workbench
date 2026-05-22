@@ -272,6 +272,68 @@ describe('full-stack API MVP', () => {
     expect(aiAfterUpgradeResponse.statusCode).toBe(200)
   })
 
+  it('rejects oversized dataset payloads before persistence', async () => {
+    const registerResponse = await app.inject({
+      method: 'POST',
+      url: '/api/auth/register',
+      payload: {
+        email: 'dataset-limit@example.com',
+        password: 'password123',
+        name: 'Dataset Limit Tester',
+      },
+    })
+    expect(registerResponse.statusCode).toBe(200)
+    const authHeader = `Bearer ${registerResponse.json<{ token: string }>().token}`
+
+    const tooManySampleRowsResponse = await app.inject({
+      method: 'POST',
+      url: '/api/datasets',
+      headers: { authorization: authHeader },
+      payload: {
+        name: 'Too Many Samples',
+        fileName: 'too-many-samples.csv',
+        fileType: 'csv',
+        rowCount: 30,
+        fields: [{ name: 'revenue', type: 'number' }],
+        sampleRows: Array.from({ length: 21 }, (_, index) => ({ revenue: index })),
+      },
+    })
+    expect(tooManySampleRowsResponse.statusCode).toBe(400)
+    expect(tooManySampleRowsResponse.json<{ error: { code: string } }>().error.code).toBe('VALIDATION_ERROR')
+
+    const tooManyFieldsResponse = await app.inject({
+      method: 'POST',
+      url: '/api/datasets',
+      headers: { authorization: authHeader },
+      payload: {
+        name: 'Too Many Fields',
+        fileName: 'too-many-fields.csv',
+        fileType: 'csv',
+        rowCount: 1,
+        fields: Array.from({ length: 201 }, (_, index) => ({ name: `field_${index}`, type: 'text' })),
+        sampleRows: [{ field_0: 'value' }],
+      },
+    })
+    expect(tooManyFieldsResponse.statusCode).toBe(400)
+    expect(tooManyFieldsResponse.json<{ error: { code: string } }>().error.code).toBe('VALIDATION_ERROR')
+
+    const tooManyRowsResponse = await app.inject({
+      method: 'POST',
+      url: '/api/datasets',
+      headers: { authorization: authHeader },
+      payload: {
+        name: 'Too Many Rows',
+        fileName: 'too-many-rows.csv',
+        fileType: 'csv',
+        rowCount: 1_000_001,
+        fields: [{ name: 'revenue', type: 'number' }],
+        sampleRows: [{ revenue: 100 }],
+      },
+    })
+    expect(tooManyRowsResponse.statusCode).toBe(400)
+    expect(tooManyRowsResponse.json<{ error: { code: string } }>().error.code).toBe('VALIDATION_ERROR')
+  })
+
   it('enforces free project quota and unlocks it after upgrading', async () => {
     const registerResponse = await app.inject({
       method: 'POST',

@@ -1,6 +1,6 @@
 import { prisma } from '../../prisma.js'
 import type { AuthUser } from '../../auth.js'
-import type { CreateDatasetInput } from './datasets.schema.js'
+import { MAX_DATASET_SAMPLE_ROWS, type CreateDatasetInput } from './datasets.schema.js'
 
 export async function createDataset(user: AuthUser, input: CreateDatasetInput) {
   return prisma.dataset.create({
@@ -12,7 +12,8 @@ export async function createDataset(user: AuthUser, input: CreateDatasetInput) {
       rowCount: input.rowCount,
       fieldCount: input.fields.length,
       fieldsJson: JSON.stringify(input.fields),
-      sampleJson: JSON.stringify(input.sampleRows.slice(0, 20)),
+      // 服务端再次截断样本行，确保后续 schema 调整时存储层仍然不会写入过大的明细快照。
+      sampleJson: JSON.stringify(input.sampleRows.slice(0, MAX_DATASET_SAMPLE_ROWS)),
     },
   })
 }
