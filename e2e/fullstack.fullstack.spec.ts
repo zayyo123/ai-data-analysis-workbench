@@ -12,6 +12,13 @@ test('登录用户可以保存云端项目、生成报告并读回用量', async
   await expect(page.getByText(email)).toBeVisible()
   await expect(page.getByText(/FREE 套餐/)).toBeVisible()
 
+  await page.goto('/login')
+  await expect(page).toHaveURL('/')
+  await expect(page.getByText(email)).toBeVisible()
+  await page.goto('/register')
+  await expect(page).toHaveURL('/')
+  await expect(page.getByText(email)).toBeVisible()
+
   await page.getByRole('button', { name: /销售经营分析/ }).click()
   await expect(page.getByText('数据分析工作台')).toBeVisible()
   await expect(page.getByText('套餐与用量')).toBeVisible()

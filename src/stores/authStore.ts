@@ -12,6 +12,8 @@ export const useAuthStore = defineStore('auth', () => {
   const billingPlans = ref<BillingPlan[]>([])
   const loading = ref(false)
   const error = ref('')
+  const sessionRestored = ref(false)
+  let restoreSessionPromise: Promise<void> | null = null
 
   const isAuthenticated = computed(() => Boolean(token.value && user.value))
   const usageLabel = computed(() => {
@@ -29,7 +31,19 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function restoreSession(): Promise<void> {
-    if (!token.value) return
+    if (sessionRestored.value) return
+    if (restoreSessionPromise) return restoreSessionPromise
+
+    restoreSessionPromise = runSessionRestore()
+    await restoreSessionPromise
+  }
+
+  async function runSessionRestore(): Promise<void> {
+    if (!token.value) {
+      sessionRestored.value = true
+      restoreSessionPromise = null
+      return
+    }
 
     loading.value = true
     error.value = ''
@@ -43,6 +57,8 @@ export const useAuthStore = defineStore('auth', () => {
       error.value = isUnauthorizedApiError(caughtError) ? '登录已过期，请重新登录' : getApiErrorMessage(caughtError, '账号会话恢复失败')
     } finally {
       loading.value = false
+      sessionRestored.value = true
+      restoreSessionPromise = null
     }
   }
 
@@ -101,6 +117,7 @@ export const useAuthStore = defineStore('auth', () => {
     token.value = ''
     user.value = null
     usage.value = null
+    sessionRestored.value = true
     clearStoredToken()
   }
 
@@ -111,6 +128,7 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await request()
       token.value = response.token
       user.value = response.user
+      sessionRestored.value = true
       setStoredToken(response.token)
       await refreshUsage()
       await loadBillingPlans()
@@ -129,6 +147,7 @@ export const useAuthStore = defineStore('auth', () => {
     billingPlans,
     loading,
     error,
+    sessionRestored,
     isAuthenticated,
     usageLabel,
     register,
