@@ -26,6 +26,7 @@ npm install
 copy .env.example .env
 npm run prisma:generate
 npm run prisma:migrate
+npm run seed:demo
 npm run dev
 ```
 
@@ -49,6 +50,25 @@ npm run dev -- --port 5174
 - AI 用量记录。
 
 后端 MVP 不保存全量明细 rows，避免 SQLite 文件快速膨胀。云端恢复工作台时使用数据样本快照，完整明细仍由用户上传或后续对象存储方案承接。
+
+## 演示账号
+
+后端提供可重复执行的演示数据初始化命令：
+
+```bash
+cd server
+npm run seed:demo
+```
+
+该命令会创建或更新下面的账号，并预置销售数据集、Dashboard 和一份 AI 报告，方便销售演示、作品集录屏和部署验收：
+
+```text
+邮箱：demo@example.com
+密码：password123
+套餐：Pro
+```
+
+Seed 脚本是幂等的，重复执行会覆盖同一个演示项目，避免演示环境越跑越乱。
 
 ## 验证命令
 
@@ -80,7 +100,7 @@ Windows 中文路径下如遇到 Prisma `db push` 或 `migrate` schema engine �
 
 1. 打开首页。
 2. 未登录时点击“销售经营分析”示例数据，验证本地模式完整链路。
-3. 注册账号并登录。
+3. 使用 `demo@example.com` / `password123` 登录，或注册一个新账号。
 4. 再次加载示例数据，确认项目写入后端。
 5. 返回首页打开最近项目，确认 Dashboard 和云端样本快照恢复。
 6. 生成 AI 分析，确认套餐用量增加。

@@ -194,7 +194,20 @@ npm run prisma:migrate
 
 如果你在 Windows 中文路径下遇到 Prisma schema engine 空错误，建议临时把仓库 clone 到纯英文路径，或先使用后端测试里的 SQL 建表策略继续开发。该问题已记录在 `docs/automation-notes.md`。
 
-5. 启动后端：
+5. 可选：初始化演示账号和云端项目：
+
+```bash
+npm run seed:demo
+```
+
+该命令会幂等创建一个 Pro 演示账号、销售示例数据集、Dashboard 和一份已保存 AI 报告：
+
+```text
+邮箱：demo@example.com
+密码：password123
+```
+
+6. 启动后端：
 
 ```bash
 npm run dev
@@ -206,7 +219,7 @@ npm run dev
 http://127.0.0.1:4000
 ```
 
-6. 新开一个终端启动前端：
+7. 新开一个终端启动前端：
 
 ```bash
 npm run dev -- --port 5174

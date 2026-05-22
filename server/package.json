@@ -11,6 +11,7 @@
     "test": "dotenv -e .env.example -- prisma generate && dotenv -e .env.example -- vitest run",
     "e2e:db": "dotenv -e .env.e2e -- prisma generate && dotenv -e .env.e2e -- tsx scripts/resetE2eDatabase.ts",
     "e2e:dev": "dotenv -e .env.e2e -- tsx src/server.ts",
+    "seed:demo": "dotenv -e .env.example -- prisma generate && dotenv -e .env.example -- tsx scripts/seedDemo.ts",
     "prisma:generate": "dotenv -e .env.example -- prisma generate",
     "prisma:migrate": "dotenv -e .env.example -- prisma migrate dev",
     "prisma:studio": "dotenv -e .env.example -- prisma studio"
