@@ -48,8 +48,11 @@ npm run start
 ```bash
 DATABASE_URL="file:./dev.db"
 JWT_SECRET="replace-with-a-long-random-secret"
+JWT_EXPIRES_IN="7d"
 PORT=4000
 CORS_ORIGIN="https://your-frontend-domain.com"
+AUTH_RATE_LIMIT_MAX=20
+AUTH_RATE_LIMIT_WINDOW_MS=60000
 AI_API_BASE_URL=""
 AI_API_KEY=""
 ENABLE_MOCK_AI=true
@@ -89,7 +92,9 @@ docker compose down -v
 生产使用前必须修改：
 
 - `JWT_SECRET`：替换为强随机字符串。
+- `JWT_EXPIRES_IN`：按业务安全要求设置登录态有效期，例如 `7d` 或 `24h`。
 - `CORS_ORIGIN`：替换为真实前端域名。
+- `AUTH_RATE_LIMIT_MAX` / `AUTH_RATE_LIMIT_WINDOW_MS`：按登录流量调整认证接口限流阈值。
 - `ENABLE_MOCK_AI`：接入真实 AI 服务后改为 `false`。
 - `AI_API_BASE_URL` / `AI_API_KEY`：填写后端可访问的 AI 服务配置。
 

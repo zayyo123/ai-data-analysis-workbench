@@ -21,6 +21,8 @@ describe('full-stack API MVP', () => {
       url: '/api/live',
     })
     expect(liveResponse.statusCode).toBe(200)
+    expect(liveResponse.headers['x-content-type-options']).toBe('nosniff')
+    expect(liveResponse.headers['x-frame-options']).toBe('DENY')
     expect(liveResponse.json<{ status: string; service: string } >()).toMatchObject({
       status: 'ok',
       service: 'ai-data-analysis-workbench-server',
@@ -50,6 +52,8 @@ describe('full-stack API MVP', () => {
 
     expect(registerResponse.statusCode).toBe(200)
     const registerBody = registerResponse.json<{ token: string }>()
+    const tokenPayload = decodeJwtPayload<{ exp?: number }>(registerBody.token)
+    expect(tokenPayload.exp).toBeTypeOf('number')
     const authHeader = `Bearer ${registerBody.token}`
 
     const datasetResponse = await app.inject({
@@ -209,4 +213,40 @@ describe('full-stack API MVP', () => {
     expect(usageResponse.statusCode).toBe(200)
     expect(usageResponse.json<{ usage: { aiUsedToday: number } }>().usage.aiUsedToday).toBe(5)
   })
+
+  it('rate limits repeated auth attempts from the same client', async () => {
+    const headers = { 'x-forwarded-for': '203.0.113.10' }
+
+    for (let index = 0; index < 20; index += 1) {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/auth/login',
+        headers,
+        payload: {
+          email: 'missing@example.com',
+          password: 'password123',
+        },
+      })
+      expect(response.statusCode).toBe(401)
+    }
+
+    const blockedResponse = await app.inject({
+      method: 'POST',
+      url: '/api/auth/login',
+      headers,
+      payload: {
+        email: 'missing@example.com',
+        password: 'password123',
+      },
+    })
+    expect(blockedResponse.statusCode).toBe(429)
+    expect(blockedResponse.headers['retry-after']).toBeDefined()
+    expect(blockedResponse.json<{ error: { code: string } }>().error.code).toBe('RATE_LIMITED')
+  })
 })
+
+function decodeJwtPayload<TPayload>(token: string): TPayload {
+  const [, payload] = token.split('.')
+  if (!payload) throw new Error('JWT payload is missing')
+  return JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as TPayload
+}

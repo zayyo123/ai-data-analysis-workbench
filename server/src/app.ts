@@ -29,6 +29,14 @@ export function buildApp() {
     secret: env.JWT_SECRET,
   })
 
+  app.addHook('onRequest', async (_request, reply) => {
+    reply.header('X-Content-Type-Options', 'nosniff')
+    reply.header('X-Frame-Options', 'DENY')
+    reply.header('Referrer-Policy', 'no-referrer')
+    reply.header('Cross-Origin-Opener-Policy', 'same-origin')
+    reply.header('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+  })
+
   void app.register(healthRoutes, { prefix: '/api' })
   void app.register(authRoutes, { prefix: '/api/auth' })
   void app.register(datasetRoutes, { prefix: '/api/datasets' })

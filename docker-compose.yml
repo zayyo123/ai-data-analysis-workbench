@@ -5,8 +5,11 @@ services:
     environment:
       DATABASE_URL: file:/data/dev.db
       JWT_SECRET: change-this-secret-before-production
+      JWT_EXPIRES_IN: 7d
       PORT: 4000
       CORS_ORIGIN: http://127.0.0.1:8080,http://localhost:8080
+      AUTH_RATE_LIMIT_MAX: 20
+      AUTH_RATE_LIMIT_WINDOW_MS: 60000
       AI_API_BASE_URL: ""
       AI_API_KEY: ""
       ENABLE_MOCK_AI: "true"
