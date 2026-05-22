@@ -8,7 +8,7 @@
 
 当前版本已经具备一条可演示的前后端闭环：
 
-1. 未登录用户可以直接上传示例数据，在浏览器本地完成分析、图表和 Markdown 报告导出。
+1. 未登录用户可以直接上传示例数据，在浏览器本地完成分析、图表和 Markdown / HTML 报告导出。
 2. 注册 / 登录后，前端会接入 Fastify 后端，把数据集摘要、项目、Dashboard 和 AI 报告保存到 SQLite。
 3. 后端提供 JWT 鉴权、用户信息、数据集、项目、AI 分析报告和用量限制接口。
 4. 免费套餐默认每天 5 次 AI 分析；无真实 AI Key 时走 Mock AI，保证开源项目可直接演示。
@@ -53,7 +53,7 @@ AI Data Analysis Workbench 是一个运行在浏览器端的数据分析应用�
 - Dashboard 支持图表展示、删除、点击筛选和选中态。
 - 右侧图表配置面板支持编辑图表标题、图表类型、维度字段、数值字段、聚合方式、Top N 和排序。
 - AI 分析面板支持 Mock 流式输出、停止生成、清空和保存到报告。
-- 报告页支持 Markdown 结构化预览和 Markdown 文件导出。
+- 报告页支持 Markdown 结构化预览，并可导出 Markdown / HTML 文件。
 - 已补齐 Vitest 单元测试、Playwright E2E、GitHub Actions、示例数据和开源文档。
 
 ### 已规划核心功能
@@ -138,7 +138,7 @@ AI Data Analysis Workbench 是一个运行在浏览器端的数据分析应用�
 
 ### 只体验前端本地模式
 
-本地模式不需要后端服务，适合快速演示上传、图表推荐、Dashboard、Mock AI 和 Markdown 导出。
+本地模式不需要后端服务，适合快速演示上传、图表推荐、Dashboard、Mock AI 和 Markdown / HTML 导出。
 
 ```bash
 npm install

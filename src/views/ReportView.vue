@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ReportPreview from '@/components/report/ReportPreview.vue'
 import { buildMarkdownReport } from '@/services/report/reportBuilder'
+import { exportHtmlReport } from '@/services/report/exportHtml'
 import { exportMarkdown } from '@/services/report/exportMarkdown'
 import { getRemoteDataset } from '@/services/api/datasetApi'
 import { getApiErrorMessage, isUnauthorizedApiError } from '@/services/api/httpClient'
@@ -27,9 +28,14 @@ const reportContent = computed(() => {
   return buildMarkdownReport(projectStore.currentProject, datasetStore.currentDataset)
 })
 
-function handleExport(): void {
+function handleMarkdownExport(): void {
   if (!projectStore.currentProject || !reportContent.value) return
   exportMarkdown(`${projectStore.currentProject.name}-分析报告`, reportContent.value)
+}
+
+function handleHtmlExport(): void {
+  if (!projectStore.currentProject || !reportContent.value) return
+  exportHtmlReport(`${projectStore.currentProject.name}-分析报告`, reportContent.value)
 }
 
 async function restoreReportContext(): Promise<void> {
@@ -78,11 +84,17 @@ async function restoreReportContext(): Promise<void> {
           返回工作台
         </el-button>
         <el-button
-          type="primary"
           :disabled="!reportContent"
-          @click="handleExport"
+          @click="handleMarkdownExport"
         >
           导出 Markdown
+        </el-button>
+        <el-button
+          type="primary"
+          :disabled="!reportContent"
+          @click="handleHtmlExport"
+        >
+          导出 HTML
         </el-button>
       </div>
     </header>
