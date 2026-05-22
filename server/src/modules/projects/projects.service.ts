@@ -1,5 +1,6 @@
 import { prisma } from '../../prisma.js'
 import type { AuthUser } from '../../auth.js'
+import { assertCanCreateProject } from '../billing/billing.service.js'
 import type { CreateProjectInput, UpdateProjectInput } from './projects.schema.js'
 
 export async function createProject(user: AuthUser, input: CreateProjectInput) {
@@ -7,6 +8,8 @@ export async function createProject(user: AuthUser, input: CreateProjectInput) {
     where: { id: input.datasetId, userId: user.id },
   })
   if (!dataset) throw new Error('数据集不存在')
+
+  await assertCanCreateProject(user)
 
   return prisma.project.create({
     data: {

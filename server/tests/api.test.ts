@@ -272,6 +272,107 @@ describe('full-stack API MVP', () => {
     expect(aiAfterUpgradeResponse.statusCode).toBe(200)
   })
 
+  it('enforces free project quota and unlocks it after upgrading', async () => {
+    const registerResponse = await app.inject({
+      method: 'POST',
+      url: '/api/auth/register',
+      payload: {
+        email: 'project-limit@example.com',
+        password: 'password123',
+        name: 'Project Limit Tester',
+      },
+    })
+    expect(registerResponse.statusCode).toBe(200)
+    const authHeader = `Bearer ${registerResponse.json<{ token: string }>().token}`
+
+    const datasetResponse = await app.inject({
+      method: 'POST',
+      url: '/api/datasets',
+      headers: { authorization: authHeader },
+      payload: {
+        name: 'Project Limit Dataset',
+        fileName: 'project-limit.csv',
+        fileType: 'csv',
+        rowCount: 1,
+        fields: [{ name: 'revenue', type: 'number' }],
+        sampleRows: [{ revenue: 100 }],
+      },
+    })
+    expect(datasetResponse.statusCode).toBe(200)
+    const datasetId = datasetResponse.json<{ dataset: { id: string } }>().dataset.id
+
+    // 免费版最多保存 10 个云端项目；接口必须按真实项目数执行限制，避免只做前端提示。
+    for (let index = 0; index < 10; index += 1) {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/projects',
+        headers: { authorization: authHeader },
+        payload: {
+          name: `Project ${index + 1}`,
+          datasetId,
+          dashboard: { charts: [] },
+          filters: [],
+        },
+      })
+      expect(response.statusCode).toBe(200)
+    }
+
+    const usageResponse = await app.inject({
+      method: 'GET',
+      url: '/api/billing/usage',
+      headers: { authorization: authHeader },
+    })
+    expect(usageResponse.statusCode).toBe(200)
+    expect(usageResponse.json<{ usage: { projectCount: number; projectLimit: number | null } }>().usage).toMatchObject({
+      projectCount: 10,
+      projectLimit: 10,
+    })
+
+    const blockedResponse = await app.inject({
+      method: 'POST',
+      url: '/api/projects',
+      headers: { authorization: authHeader },
+      payload: {
+        name: 'Project 11',
+        datasetId,
+        dashboard: { charts: [] },
+        filters: [],
+      },
+    })
+    expect(blockedResponse.statusCode).toBe(429)
+    expect(blockedResponse.json<{ error: { code: string } }>().error.code).toBe('PROJECT_LIMIT_EXCEEDED')
+
+    const upgradeResponse = await app.inject({
+      method: 'POST',
+      url: '/api/billing/upgrade',
+      headers: { authorization: authHeader },
+      payload: { plan: 'PRO' },
+    })
+    expect(upgradeResponse.statusCode).toBe(200)
+    const upgradedBody = upgradeResponse.json<{
+      token: string
+      usage: { plan: string; projectCount: number; projectLimit: number | null }
+    }>()
+    expect(upgradedBody.usage).toMatchObject({
+      plan: 'PRO',
+      projectCount: 10,
+      projectLimit: null,
+    })
+
+    const createAfterUpgradeResponse = await app.inject({
+      method: 'POST',
+      url: '/api/projects',
+      headers: { authorization: `Bearer ${upgradedBody.token}` },
+      payload: {
+        name: 'Project 11',
+        datasetId,
+        dashboard: { charts: [] },
+        filters: [],
+      },
+    })
+    expect(createAfterUpgradeResponse.statusCode).toBe(200)
+  })
+
   it('rate limits repeated auth attempts from the same client', async () => {
     const headers = { 'x-forwarded-for': '203.0.113.10' }
 

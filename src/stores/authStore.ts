@@ -18,8 +18,9 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = computed(() => Boolean(token.value && user.value))
   const usageLabel = computed(() => {
     if (!usage.value) return '未同步用量'
-    if (usage.value.aiDailyLimit === null) return `${usage.value.plan} 套餐：AI 不限次`
-    return `${usage.value.plan} 套餐：今日 AI ${usage.value.aiUsedToday}/${usage.value.aiDailyLimit}`
+    const projectText = usage.value.projectLimit === null ? '项目不限量' : `项目 ${usage.value.projectCount}/${usage.value.projectLimit}`
+    if (usage.value.aiDailyLimit === null) return `${usage.value.plan} 套餐：AI 不限次，${projectText}`
+    return `${usage.value.plan} 套餐：今日 AI ${usage.value.aiUsedToday}/${usage.value.aiDailyLimit}，${projectText}`
   })
 
   async function register(input: { email: string; password: string; name?: string }): Promise<void> {

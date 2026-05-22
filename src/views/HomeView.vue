@@ -7,7 +7,7 @@ import UsagePlanCard from '@/components/billing/UsagePlanCard.vue'
 import FileDropzone from '@/components/upload/FileDropzone.vue'
 import { sampleDatasets, type SampleDataset } from '@/data/sampleDatasets'
 import { createRemoteDataset } from '@/services/api/datasetApi'
-import { getApiErrorMessage, isUnauthorizedApiError } from '@/services/api/httpClient'
+import { ApiError, getApiErrorMessage, isUnauthorizedApiError } from '@/services/api/httpClient'
 import { createRemoteProject } from '@/services/api/projectApi'
 import { useAuthStore } from '@/stores/authStore'
 import { useDashboardStore } from '@/stores/dashboardStore'
@@ -78,7 +78,12 @@ async function createProjectFromCurrentDataset(): Promise<void> {
       const message = isUnauthorizedApiError(caughtError)
         ? '登录已过期，云端保存已关闭'
         : getApiErrorMessage(caughtError, '服务端同步失败')
-      ElMessage.warning(`${message}，已切换为本地演示模式`)
+      if (caughtError instanceof ApiError && caughtError.code === 'PROJECT_LIMIT_EXCEEDED') {
+        await authStore.refreshUsage()
+        ElMessage.warning(`${message}，已切换为本地演示模式；升级 Pro 后可继续云端保存`)
+      } else {
+        ElMessage.warning(`${message}，已切换为本地演示模式`)
+      }
     }
   }
 

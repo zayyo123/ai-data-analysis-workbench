@@ -25,6 +25,17 @@ const usagePercent = computed(() => {
   return Math.min(100, Math.round((props.usage.aiUsedToday / props.usage.aiDailyLimit) * 100))
 })
 
+const projectLimitText = computed(() => {
+  if (!props.usage) return '未同步'
+  if (props.usage.projectLimit === null) return '不限量'
+  return `${props.usage.projectCount}/${props.usage.projectLimit}`
+})
+
+const projectUsagePercent = computed(() => {
+  if (!props.usage?.projectLimit) return 0
+  return Math.min(100, Math.round((props.usage.projectCount / props.usage.projectLimit) * 100))
+})
+
 const planDescription = computed(() => {
   if (!isLoggedIn.value) return '登录后可开启云端项目保存、AI 用量统计和团队套餐能力。'
   if (!props.usage) return '正在同步账号套餐和用量信息。'
@@ -51,21 +62,37 @@ function upgradePlan(plan: BillingPlan): void {
       </el-tag>
     </div>
     <div class="panel-body usage-card">
-      <div>
-        <p class="usage-value">
-          {{ limitText }}
-        </p>
-        <p class="muted usage-caption">
-          今日 AI 分析额度
-        </p>
-      </div>
+      <div class="usage-metrics">
+        <div class="usage-metric">
+          <p class="usage-value">
+            {{ limitText }}
+          </p>
+          <p class="muted usage-caption">
+            今日 AI 分析额度
+          </p>
+          <el-progress
+            v-if="usage?.aiDailyLimit"
+            :percentage="usagePercent"
+            :stroke-width="8"
+            :show-text="false"
+          />
+        </div>
 
-      <el-progress
-        v-if="usage?.aiDailyLimit"
-        :percentage="usagePercent"
-        :stroke-width="8"
-        :show-text="false"
-      />
+        <div class="usage-metric">
+          <p class="usage-value">
+            {{ projectLimitText }}
+          </p>
+          <p class="muted usage-caption">
+            云端项目额度
+          </p>
+          <el-progress
+            v-if="usage?.projectLimit"
+            :percentage="projectUsagePercent"
+            :stroke-width="8"
+            :show-text="false"
+          />
+        </div>
+      </div>
 
       <p class="usage-description">
         {{ planDescription }}
@@ -107,6 +134,19 @@ function upgradePlan(plan: BillingPlan): void {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.usage-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.usage-metric {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .usage-value {
@@ -152,5 +192,11 @@ function upgradePlan(plan: BillingPlan): void {
 .plan-option-header span,
 .plan-feature {
   font-size: 12px;
+}
+
+@media (max-width: 520px) {
+  .usage-metrics {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

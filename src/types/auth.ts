@@ -11,6 +11,8 @@ export interface UsageSummary {
   plan: UserPlan
   aiDailyLimit: number | null
   aiUsedToday: number
+  projectLimit: number | null
+  projectCount: number
 }
 
 export interface BillingPlan {
@@ -18,5 +20,6 @@ export interface BillingPlan {
   name: string
   priceMonthly: number
   aiDailyLimit: number | null
+  projectLimit: number | null
   features: string[]
 }

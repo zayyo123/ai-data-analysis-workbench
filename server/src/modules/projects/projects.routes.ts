@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import { requireAuth } from '../../auth.js'
 import { sendError } from '../../utils/errors.js'
+import { ProjectLimitError } from '../billing/billing.service.js'
 import { createProjectSchema, updateProjectSchema } from './projects.schema.js'
 import { createProject, deleteProject, getProject, listProjects, serializeProject, updateProject } from './projects.service.js'
 
@@ -13,6 +14,10 @@ export async function projectRoutes(app: FastifyInstance) {
       const project = await createProject(user, parsed.data)
       return { project: serializeProject(project) }
     } catch (error) {
+      if (error instanceof ProjectLimitError) {
+        return sendError(reply, 429, error.message, 'PROJECT_LIMIT_EXCEEDED')
+      }
+
       return sendError(reply, 400, error instanceof Error ? error.message : '项目创建失败', 'PROJECT_CREATE_FAILED')
     }
   })
