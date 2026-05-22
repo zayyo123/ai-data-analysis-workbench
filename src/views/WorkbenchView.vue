@@ -12,6 +12,7 @@ import DashboardCanvas from '@/components/dashboard/DashboardCanvas.vue'
 import FilterBar from '@/components/dashboard/FilterBar.vue'
 import FileDropzone from '@/components/upload/FileDropzone.vue'
 import { getRemoteDataset } from '@/services/api/datasetApi'
+import { getApiErrorMessage, isUnauthorizedApiError } from '@/services/api/httpClient'
 import { useAuthStore } from '@/stores/authStore'
 import { useAiStore } from '@/stores/aiStore'
 import { useDashboardStore } from '@/stores/dashboardStore'
@@ -55,7 +56,13 @@ async function restoreProjectDataset(datasetId: string): Promise<void> {
   try {
     datasetStore.setCurrentDataset(await getRemoteDataset(datasetId))
   } catch (caughtError) {
-    const message = caughtError instanceof Error ? caughtError.message : '远程数据集读取失败'
+    if (isUnauthorizedApiError(caughtError)) {
+      authStore.logout()
+    }
+
+    const message = isUnauthorizedApiError(caughtError)
+      ? '登录已过期，已切换为本地模式'
+      : getApiErrorMessage(caughtError, '远程数据集读取失败')
     ElMessage.warning(`${message}，请重新上传数据文件`)
   }
 }

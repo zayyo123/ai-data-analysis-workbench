@@ -18,6 +18,16 @@ export class ApiError extends Error {
   }
 }
 
+export function isUnauthorizedApiError(error: unknown): error is ApiError {
+  return error instanceof ApiError && (error.status === 401 || error.code === 'UNAUTHORIZED')
+}
+
+export function getApiErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof ApiError) return error.message
+  if (error instanceof Error) return error.message
+  return fallback
+}
+
 export function getApiBaseUrl(): string {
   return import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:4000/api'
 }
@@ -49,10 +59,16 @@ export async function apiRequest<TResponse>(
     headers.set('Authorization', `Bearer ${token}`)
   }
 
-  const response = await fetch(`${getApiBaseUrl()}${path}`, {
-    ...options,
-    headers,
-  })
+  let response: Response
+  try {
+    response = await fetch(`${getApiBaseUrl()}${path}`, {
+      ...options,
+      headers,
+    })
+  } catch {
+    // 网络错误没有 HTTP 状态码，统一映射为稳定错误码，方便上层降级到本地模式。
+    throw new ApiError('无法连接后端服务，请确认服务已启动；当前操作已保留本地副本', 0, 'NETWORK_ERROR')
+  }
 
   if (!response.ok) {
     let errorBody: ApiErrorBody = {}

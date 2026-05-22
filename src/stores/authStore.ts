@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { fetchCurrentUser, loginWithEmail, registerWithEmail } from '@/services/api/authApi'
 import { fetchUsageSummary } from '@/services/api/billingApi'
-import { clearStoredToken, getStoredToken, setStoredToken } from '@/services/api/httpClient'
+import { clearStoredToken, getApiErrorMessage, getStoredToken, isUnauthorizedApiError, setStoredToken } from '@/services/api/httpClient'
 import type { AuthUser, UsageSummary } from '@/types/auth'
 
 export const useAuthStore = defineStore('auth', () => {
@@ -36,8 +36,9 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await fetchCurrentUser()
       user.value = response.user
       await refreshUsage()
-    } catch {
+    } catch (caughtError) {
       logout()
+      error.value = isUnauthorizedApiError(caughtError) ? '登录已过期，请重新登录' : getApiErrorMessage(caughtError, '账号会话恢复失败')
     } finally {
       loading.value = false
     }
@@ -45,8 +46,17 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function refreshUsage(): Promise<void> {
     if (!token.value) return
-    const response = await fetchUsageSummary()
-    usage.value = response.usage
+    try {
+      const response = await fetchUsageSummary()
+      usage.value = response.usage
+    } catch (caughtError) {
+      if (isUnauthorizedApiError(caughtError)) {
+        logout()
+        error.value = '登录已过期，请重新登录'
+        return
+      }
+      error.value = getApiErrorMessage(caughtError, '用量同步失败')
+    }
   }
 
   function logout(): void {
@@ -66,7 +76,7 @@ export const useAuthStore = defineStore('auth', () => {
       setStoredToken(response.token)
       await refreshUsage()
     } catch (caughtError) {
-      error.value = caughtError instanceof Error ? caughtError.message : '账号请求失败'
+      error.value = getApiErrorMessage(caughtError, '账号请求失败')
       throw caughtError
     } finally {
       loading.value = false

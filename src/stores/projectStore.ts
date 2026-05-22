@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { getApiErrorMessage, isUnauthorizedApiError } from '@/services/api/httpClient'
 import { getRemoteProject, listRemoteProjects, updateRemoteProject } from '@/services/api/projectApi'
 import { listRemoteReports } from '@/services/api/reportApi'
 import type { DashboardConfig } from '@/types/chart'
@@ -65,7 +66,7 @@ export const useProjectStore = defineStore('project', () => {
       projects.value = await listRemoteProjects()
       persist()
     } catch (caughtError) {
-      syncError.value = caughtError instanceof Error ? caughtError.message : '远程项目同步失败'
+      syncError.value = handleRemoteError(authStore, caughtError, '远程项目同步失败，本地项目仍可继续使用')
     }
   }
 
@@ -77,7 +78,7 @@ export const useProjectStore = defineStore('project', () => {
     try {
       upsertProject(await getRemoteProject(projectId))
     } catch (caughtError) {
-      syncError.value = caughtError instanceof Error ? caughtError.message : '远程项目读取失败'
+      syncError.value = handleRemoteError(authStore, caughtError, '远程项目读取失败，请稍后重试')
     }
   }
 
@@ -96,7 +97,7 @@ export const useProjectStore = defineStore('project', () => {
         updatedAt: syncedProject.updatedAt,
       })
     } catch (caughtError) {
-      syncError.value = caughtError instanceof Error ? caughtError.message : '远程项目保存失败，已保留本地副本'
+      syncError.value = handleRemoteError(authStore, caughtError, '远程项目保存失败，已保留本地副本')
     }
   }
 
@@ -110,7 +111,7 @@ export const useProjectStore = defineStore('project', () => {
       projects.value = projects.value.map((project) => (project.id === currentProject.value?.id ? currentProject.value : project))
       persist()
     } catch (caughtError) {
-      syncError.value = caughtError instanceof Error ? caughtError.message : '远程报告同步失败'
+      syncError.value = handleRemoteError(authStore, caughtError, '远程报告同步失败，本地报告仍可继续查看')
     }
   }
 
@@ -145,4 +146,13 @@ function cloneDashboard(dashboard: DashboardConfig): DashboardConfig {
   // Pinia 返回的对象可能是响应式 Proxy，structuredClone 无法直接克隆。
   // Dashboard 配置只包含 JSON 安全数据，用序列化方式转成普通对象更稳定。
   return JSON.parse(JSON.stringify(dashboard)) as DashboardConfig
+}
+
+function handleRemoteError(authStore: ReturnType<typeof useAuthStore>, error: unknown, fallback: string): string {
+  if (isUnauthorizedApiError(error)) {
+    authStore.logout()
+    return '登录已过期，已切换为本地模式；当前项目副本不会丢失'
+  }
+
+  return getApiErrorMessage(error, fallback)
 }
