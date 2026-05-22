@@ -147,6 +147,21 @@ describe('full-stack API MVP', () => {
     })
     expect(usageResponse.statusCode).toBe(200)
     expect(usageResponse.json<{ usage: { aiUsedToday: number } }>().usage.aiUsedToday).toBe(1)
+
+    const deleteProjectResponse = await app.inject({
+      method: 'DELETE',
+      url: `/api/projects/${projectId}`,
+      headers: { authorization: authHeader },
+    })
+    expect(deleteProjectResponse.statusCode).toBe(200)
+    expect(deleteProjectResponse.json<{ ok: boolean }>().ok).toBe(true)
+
+    const deletedProjectResponse = await app.inject({
+      method: 'GET',
+      url: `/api/projects/${projectId}`,
+      headers: { authorization: authHeader },
+    })
+    expect(deletedProjectResponse.statusCode).toBe(404)
   })
 
   it('blocks free users after the daily AI analysis quota is exhausted', async () => {

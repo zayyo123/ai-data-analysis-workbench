@@ -63,6 +63,12 @@ export async function getRemoteProject(projectId: string): Promise<AnalysisProje
   return normalizeServerProject(response.project)
 }
 
+export function deleteRemoteProject(projectId: string): Promise<{ ok: true }> {
+  return apiRequest<{ ok: true }>(`/projects/${projectId}`, {
+    method: 'DELETE',
+  })
+}
+
 export function normalizeServerProject(project: ServerProject): AnalysisProject {
   return {
     id: project.id,

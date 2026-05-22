@@ -31,6 +31,23 @@ test('用户可以上传 CSV、添加推荐图表并生成 Mock AI 分析', asyn
   await expect(page.getByText('数据概览')).toBeVisible({ timeout: 10_000 })
 })
 
+test('用户可以删除本地最近项目', async ({ page }) => {
+  await page.goto('/')
+
+  await page.getByRole('button', { name: /销售经营分析/ }).click()
+  await expect(page.getByText('字段列表')).toBeVisible()
+
+  await page.getByRole('button', { name: '返回首页' }).click()
+  await expect(page.getByText('最近项目')).toBeVisible()
+  await expect(page.locator('.project-list').getByRole('button', { name: /销售经营分析/ })).toBeVisible()
+
+  await page.getByRole('button', { name: '删除' }).first().click()
+  await page.getByRole('button', { name: '删除' }).last().click()
+
+  await expect(page.getByText('项目已删除')).toBeVisible()
+  await expect(page.getByText('上传数据后会自动创建项目')).toBeVisible()
+})
+
 test('用户仍然可以通过本地 CSV 文件完成分析链路', async ({ page }) => {
   await page.goto('/')
 

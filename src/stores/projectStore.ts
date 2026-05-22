@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { getApiErrorMessage, isUnauthorizedApiError } from '@/services/api/httpClient'
-import { getRemoteProject, listRemoteProjects, updateRemoteProject } from '@/services/api/projectApi'
+import { deleteRemoteProject, getRemoteProject, listRemoteProjects, updateRemoteProject } from '@/services/api/projectApi'
 import { listRemoteReports } from '@/services/api/reportApi'
 import type { DashboardConfig } from '@/types/chart'
 import type { AiReport, AnalysisProject } from '@/types/project'
@@ -115,7 +115,18 @@ export const useProjectStore = defineStore('project', () => {
     }
   }
 
-  function deleteProject(projectId: string): void {
+  async function deleteProject(projectId: string): Promise<void> {
+    const authStore = useAuthStore()
+    if (authStore.isAuthenticated) {
+      syncError.value = ''
+      try {
+        await deleteRemoteProject(projectId)
+      } catch (caughtError) {
+        syncError.value = handleRemoteError(authStore, caughtError, '远程项目删除失败，本地项目已保留')
+        throw caughtError
+      }
+    }
+
     projects.value = projects.value.filter((project) => project.id !== projectId)
     if (currentProject.value?.id === projectId) currentProject.value = null
     persist()

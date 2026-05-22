@@ -2,6 +2,7 @@
 import { onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 import UsagePlanCard from '@/components/billing/UsagePlanCard.vue'
 import FileDropzone from '@/components/upload/FileDropzone.vue'
 import { sampleDatasets, type SampleDataset } from '@/data/sampleDatasets'
@@ -88,6 +89,21 @@ async function createProjectFromCurrentDataset(): Promise<void> {
 function openProject(projectId: string): void {
   projectStore.loadProject(projectId)
   void router.push(`/workbench/${projectId}`)
+}
+
+async function deleteProject(projectId: string, projectName: string): Promise<void> {
+  try {
+    await ElMessageBox.confirm(`确定删除「${projectName}」吗？此操作会同步删除云端项目。`, '删除项目', {
+      confirmButtonText: '删除',
+      cancelButtonText: '取消',
+      type: 'warning',
+    })
+    await projectStore.deleteProject(projectId)
+    ElMessage.success('项目已删除')
+  } catch (caughtError) {
+    if (caughtError === 'cancel' || caughtError === 'close') return
+    ElMessage.error(projectStore.syncError || '项目删除失败')
+  }
 }
 
 function logout(): void {
@@ -195,15 +211,28 @@ async function upgradePlan(plan: Exclude<UserPlan, 'FREE'>): Promise<void> {
             v-else
             class="project-list"
           >
-            <button
+            <div
               v-for="project in projectStore.projects"
               :key="project.id"
               class="project-item"
-              @click="openProject(project.id)"
             >
-              <strong>{{ project.name }}</strong>
-              <span>{{ new Date(project.updatedAt).toLocaleString() }}</span>
-            </button>
+              <button
+                class="project-open"
+                @click="openProject(project.id)"
+              >
+                <strong>{{ project.name }}</strong>
+                <span>{{ new Date(project.updatedAt).toLocaleString() }}</span>
+              </button>
+              <el-button
+                class="project-delete"
+                size="small"
+                type="danger"
+                plain
+                @click="deleteProject(project.id, project.name)"
+              >
+                删除
+              </el-button>
+            </div>
           </div>
         </div>
       </div>
@@ -267,25 +296,39 @@ async function upgradePlan(plan: Exclude<UserPlan, 'FREE'>): Promise<void> {
 }
 
 .project-item {
-  display: flex;
-  width: 100%;
-  cursor: pointer;
-  flex-direction: column;
-  gap: 4px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   background: #ffffff;
-  padding: 12px;
-  text-align: left;
+  padding: 10px;
 }
 
 .project-item:hover {
   border-color: #2563eb;
 }
 
-.project-item span {
+.project-open {
+  display: flex;
+  min-width: 0;
+  cursor: pointer;
+  flex-direction: column;
+  gap: 4px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+}
+
+.project-open span {
   color: #6b7280;
   font-size: 12px;
+}
+
+.project-delete {
+  flex: none;
 }
 
 .sample-card {
