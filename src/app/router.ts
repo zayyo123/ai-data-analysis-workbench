@@ -1,8 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import AuthView from '@/views/AuthView.vue'
-import HomeView from '@/views/HomeView.vue'
-import ReportView from '@/views/ReportView.vue'
-import WorkbenchView from '@/views/WorkbenchView.vue'
+
+const AuthView = () => import('@/views/AuthView.vue')
+const HomeView = () => import('@/views/HomeView.vue')
+const ReportView = () => import('@/views/ReportView.vue')
+const WorkbenchView = () => import('@/views/WorkbenchView.vue')
 
 export const router = createRouter({
   history: createWebHistory(),

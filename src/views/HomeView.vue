@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import UsagePlanCard from '@/components/billing/UsagePlanCard.vue'
 import FileDropzone from '@/components/upload/FileDropzone.vue'
 import { sampleDatasets, type SampleDataset } from '@/data/sampleDatasets'

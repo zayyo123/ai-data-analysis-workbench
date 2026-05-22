@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import AiAnalysisPanel from '@/components/ai/AiAnalysisPanel.vue'
 import UsagePlanCard from '@/components/billing/UsagePlanCard.vue'
 import ChartConfigPanel from '@/components/chart/ChartConfigPanel.vue'

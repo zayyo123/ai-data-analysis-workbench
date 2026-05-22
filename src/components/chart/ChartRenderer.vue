@@ -1,10 +1,15 @@
 <script setup lang="ts">
-import * as echarts from 'echarts'
+import { BarChart, LineChart, PieChart, ScatterChart } from 'echarts/charts'
+import { GridComponent, GraphicComponent, TitleComponent, TooltipComponent } from 'echarts/components'
+import { init, use, type ECharts } from 'echarts/core'
+import { CanvasRenderer } from 'echarts/renderers'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { ChartConfig, FilterCondition } from '@/types/chart'
 import type { DataRow } from '@/types/dataset'
 import { aggregateRows, type AggregateResultItem } from '@/services/chart/aggregate'
 import { buildChartOption } from '@/services/chart/optionBuilder'
+
+use([BarChart, LineChart, PieChart, ScatterChart, GridComponent, GraphicComponent, TitleComponent, TooltipComponent, CanvasRenderer])
 
 const props = defineProps<{
   config: ChartConfig
@@ -17,7 +22,7 @@ const emit = defineEmits<{
 }>()
 
 const chartEl = ref<HTMLDivElement | null>(null)
-let chart: echarts.ECharts | null = null
+let chart: ECharts | null = null
 
 const chartData = computed(() => buildChartData())
 
@@ -47,7 +52,7 @@ function buildChartData(): AggregateResultItem[] {
 function renderChart(): void {
   if (!chartEl.value) return
   if (!chart) {
-    chart = echarts.init(chartEl.value)
+    chart = init(chartEl.value)
     chart.on('click', (params) => {
       if (!props.config.xField || params.name === undefined) return
       emit('filter', {

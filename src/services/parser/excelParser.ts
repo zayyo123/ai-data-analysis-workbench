@@ -1,8 +1,9 @@
-import * as XLSX from 'xlsx'
 import type { ParseResult } from '@/types/dataset'
 import { normalizeRows } from './normalizeRows'
 
 export async function parseExcelFile(file: File, sheetName?: string): Promise<ParseResult> {
+  // xlsx 体积较大，只在用户上传 Excel 时动态加载，避免拖慢 CSV 和首页演示链路。
+  const XLSX = await import('xlsx')
   const buffer = await file.arrayBuffer()
   const workbook = XLSX.read(buffer, { type: 'array' })
   const selectedSheetName = sheetName ?? workbook.SheetNames[0]
