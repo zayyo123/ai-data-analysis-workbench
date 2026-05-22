@@ -1,0 +1,161 @@
+<script setup lang="ts">
+import { computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import AiAnalysisPanel from '@/components/ai/AiAnalysisPanel.vue'
+import ChartRecommendationList from '@/components/chart/ChartRecommendationList.vue'
+import DataPreviewTable from '@/components/data-table/DataPreviewTable.vue'
+import FieldListPanel from '@/components/data-table/FieldListPanel.vue'
+import DashboardCanvas from '@/components/dashboard/DashboardCanvas.vue'
+import FilterBar from '@/components/dashboard/FilterBar.vue'
+import FileDropzone from '@/components/upload/FileDropzone.vue'
+import { useAiStore } from '@/stores/aiStore'
+import { useDashboardStore } from '@/stores/dashboardStore'
+import { useDatasetStore } from '@/stores/datasetStore'
+import { useProjectStore } from '@/stores/projectStore'
+import type { ChartRecommendation, FilterCondition } from '@/types/chart'
+
+const route = useRoute()
+const router = useRouter()
+const aiStore = useAiStore()
+const datasetStore = useDatasetStore()
+const dashboardStore = useDashboardStore()
+const projectStore = useProjectStore()
+
+const dataset = computed(() => datasetStore.currentDataset)
+
+onMounted(() => {
+  const projectId = String(route.params.projectId)
+  projectStore.loadProject(projectId)
+})
+
+async function handleFileSelect(file: File): Promise<void> {
+  await datasetStore.parseFile(file)
+  if (!datasetStore.currentDataset) return
+  dashboardStore.resetDashboard(`${datasetStore.currentDataset.name} 分析看板`)
+  if (!projectStore.currentProject) {
+    projectStore.createProject(datasetStore.currentDataset.name, datasetStore.currentDataset.id, dashboardStore.dashboard)
+  }
+}
+
+function addRecommendation(recommendation: ChartRecommendation): void {
+  dashboardStore.addChart(recommendation.config)
+  projectStore.saveCurrentProject(dashboardStore.dashboard)
+}
+
+function removeChart(chartId: string): void {
+  dashboardStore.removeChart(chartId)
+  projectStore.saveCurrentProject(dashboardStore.dashboard)
+}
+
+function addFilter(filter: FilterCondition): void {
+  dashboardStore.addFilter(filter)
+  projectStore.saveCurrentProject(dashboardStore.dashboard)
+}
+
+function saveProject(): void {
+  projectStore.saveCurrentProject(dashboardStore.dashboard)
+}
+
+function saveAiReport(): void {
+  aiStore.saveCurrentReport()
+  projectStore.saveCurrentProject(dashboardStore.dashboard)
+}
+</script>
+
+<template>
+  <main class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <h1 class="brand-title">
+          数据分析工作台
+        </h1>
+        <p class="brand-subtitle">
+          {{ dataset?.fileName ?? '请上传 CSV / Excel 文件开始分析' }}
+        </p>
+      </div>
+      <div class="toolbar">
+        <el-button @click="router.push('/')">
+          返回首页
+        </el-button>
+        <el-button
+          :disabled="!dataset"
+          @click="saveProject"
+        >
+          保存项目
+        </el-button>
+        <el-button
+          type="primary"
+          :disabled="!dataset"
+          @click="router.push(`/report/${route.params.projectId}`)"
+        >
+          导出报告
+        </el-button>
+      </div>
+    </header>
+
+    <section
+      v-if="!dataset"
+      class="page"
+    >
+      <FileDropzone
+        :loading="datasetStore.loading"
+        @select="handleFileSelect"
+      />
+      <el-alert
+        v-if="datasetStore.error"
+        style="margin-top: 12px"
+        :title="datasetStore.error"
+        type="error"
+        :closable="false"
+      />
+    </section>
+
+    <section
+      v-else
+      data-testid="workbench-content"
+      class="page workbench-grid"
+    >
+      <aside class="stack">
+        <FieldListPanel
+          :fields="dataset.fields"
+          @update-type="datasetStore.updateFieldType"
+        />
+      </aside>
+
+      <main class="stack">
+        <FilterBar
+          :filters="dashboardStore.dashboard.filters"
+          @remove="dashboardStore.removeFilter"
+          @clear="dashboardStore.clearFilters"
+        />
+        <DataPreviewTable
+          :fields="dataset.fields"
+          :rows="dataset.rows"
+        />
+        <DashboardCanvas
+          :dashboard="dashboardStore.dashboard"
+          :rows="dataset.rows"
+          @remove="removeChart"
+          @filter="addFilter"
+        />
+      </main>
+
+      <aside class="stack">
+        <ChartRecommendationList
+          :fields="dataset.fields"
+          @add="addRecommendation"
+        />
+        <AiAnalysisPanel
+          :output="aiStore.output"
+          :generating="aiStore.generating"
+          :can-save="aiStore.canSave"
+          :error="aiStore.error"
+          @generate="aiStore.generateAnalysis"
+          @stop="aiStore.stopGeneration"
+          @save="saveAiReport"
+          @clear="aiStore.clearCurrentOutput"
+        />
+      </aside>
+    </section>
+  </main>
+</template>

@@ -1,0 +1,66 @@
+<script setup lang="ts">
+import { computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import ReportPreview from '@/components/report/ReportPreview.vue'
+import { buildMarkdownReport } from '@/services/report/reportBuilder'
+import { exportMarkdown } from '@/services/report/exportMarkdown'
+import { useDatasetStore } from '@/stores/datasetStore'
+import { useProjectStore } from '@/stores/projectStore'
+
+const route = useRoute()
+const router = useRouter()
+const datasetStore = useDatasetStore()
+const projectStore = useProjectStore()
+
+onMounted(() => {
+  projectStore.loadProject(String(route.params.projectId))
+})
+
+const reportContent = computed(() => {
+  if (!projectStore.currentProject || !datasetStore.currentDataset) return ''
+  return buildMarkdownReport(projectStore.currentProject, datasetStore.currentDataset)
+})
+
+function handleExport(): void {
+  if (!projectStore.currentProject || !reportContent.value) return
+  exportMarkdown(`${projectStore.currentProject.name}-分析报告`, reportContent.value)
+}
+</script>
+
+<template>
+  <main class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <h1 class="brand-title">
+          报告预览
+        </h1>
+        <p class="brand-subtitle">
+          Markdown 报告可直接下载和二次编辑
+        </p>
+      </div>
+      <div class="toolbar">
+        <el-button @click="router.back()">
+          返回工作台
+        </el-button>
+        <el-button
+          type="primary"
+          :disabled="!reportContent"
+          @click="handleExport"
+        >
+          导出 Markdown
+        </el-button>
+      </div>
+    </header>
+
+    <section class="page">
+      <el-empty
+        v-if="!reportContent"
+        description="请先上传数据并创建项目"
+      />
+      <ReportPreview
+        v-else
+        :content="reportContent"
+      />
+    </section>
+  </main>
+</template>
