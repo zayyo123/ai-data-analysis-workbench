@@ -217,6 +217,22 @@ npm run dev -- --port 5174
 VITE_API_BASE_URL=http://127.0.0.1:4000/api
 ```
 
+### Docker Compose 演示部署
+
+如果本机已安装 Docker，可以一条命令启动前后端：
+
+```bash
+docker compose up --build
+```
+
+访问：
+
+```text
+http://127.0.0.1:8080
+```
+
+该模式会用 Nginx 托管前端，并把 `/api` 反向代理到后端容器。SQLite 数据保存在 Docker volume `backend-data` 中。
+
 ### 旧项目初始化参考
 
 如果当前目录还没有 Vite 工程，执行：

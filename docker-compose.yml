@@ -1,0 +1,36 @@
+services:
+  backend:
+    build:
+      context: ./server
+    environment:
+      DATABASE_URL: file:/data/dev.db
+      JWT_SECRET: change-this-secret-before-production
+      PORT: 4000
+      CORS_ORIGIN: http://127.0.0.1:8080,http://localhost:8080
+      AI_API_BASE_URL: ""
+      AI_API_KEY: ""
+      ENABLE_MOCK_AI: "true"
+    ports:
+      - "4000:4000"
+    volumes:
+      - backend-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:4000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  frontend:
+    build:
+      context: .
+      args:
+        VITE_API_BASE_URL: /api
+        VITE_ENABLE_MOCK_AI: "true"
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "8080:80"
+
+volumes:
+  backend-data:

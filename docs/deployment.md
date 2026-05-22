@@ -55,6 +55,38 @@ AI_API_KEY=""
 ENABLE_MOCK_AI=true
 ```
 
+## Docker Compose 一键部署
+
+仓库提供了面向 MVP 演示的 Docker Compose 配置：
+
+```bash
+docker compose up --build
+```
+
+启动后访问：
+
+```text
+http://127.0.0.1:8080
+```
+
+Compose 会启动两个服务：
+
+- `frontend`：Nginx 托管前端静态资源，并把 `/api` 反向代理到后端。
+- `backend`：Fastify API 服务，启动时执行 `prisma db push` 初始化 SQLite 表结构。
+
+SQLite 数据保存在 Docker volume `backend-data` 中。删除演示数据：
+
+```bash
+docker compose down -v
+```
+
+生产使用前必须修改：
+
+- `JWT_SECRET`：替换为强随机字符串。
+- `CORS_ORIGIN`：替换为真实前端域名。
+- `ENABLE_MOCK_AI`：接入真实 AI 服务后改为 `false`。
+- `AI_API_BASE_URL` / `AI_API_KEY`：填写后端可访问的 AI 服务配置。
+
 ## 商业化部署建议
 
 SQLite 适合 MVP 和单机演示。进入真实商业化阶段后，建议迁移：
