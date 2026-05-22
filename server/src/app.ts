@@ -6,6 +6,7 @@ import { aiRoutes } from './modules/ai/ai.routes.js'
 import { authRoutes } from './modules/auth/auth.routes.js'
 import { billingRoutes } from './modules/billing/billing.routes.js'
 import { datasetRoutes } from './modules/datasets/datasets.routes.js'
+import { healthRoutes } from './modules/health/health.routes.js'
 import { projectRoutes } from './modules/projects/projects.routes.js'
 import { reportRoutes } from './modules/reports/reports.routes.js'
 
@@ -28,11 +29,7 @@ export function buildApp() {
     secret: env.JWT_SECRET,
   })
 
-  app.get('/api/health', async () => ({
-    status: 'ok',
-    service: 'ai-data-analysis-workbench-server',
-  }))
-
+  void app.register(healthRoutes, { prefix: '/api' })
   void app.register(authRoutes, { prefix: '/api/auth' })
   void app.register(datasetRoutes, { prefix: '/api/datasets' })
   void app.register(projectRoutes, { prefix: '/api/projects' })

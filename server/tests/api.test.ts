@@ -15,6 +15,28 @@ afterAll(async () => {
 })
 
 describe('full-stack API MVP', () => {
+  it('reports liveness and database readiness', async () => {
+    const liveResponse = await app.inject({
+      method: 'GET',
+      url: '/api/live',
+    })
+    expect(liveResponse.statusCode).toBe(200)
+    expect(liveResponse.json<{ status: string; service: string } >()).toMatchObject({
+      status: 'ok',
+      service: 'ai-data-analysis-workbench-server',
+    })
+
+    const readyResponse = await app.inject({
+      method: 'GET',
+      url: '/api/ready',
+    })
+    expect(readyResponse.statusCode).toBe(200)
+    expect(readyResponse.json<{ status: string; checks: Array<{ name: string; status: string }> } >()).toMatchObject({
+      status: 'ok',
+      checks: [{ name: 'database', status: 'ok' }],
+    })
+  })
+
   it('registers, saves dataset/project, generates AI report and reads usage', async () => {
     const registerResponse = await app.inject({
       method: 'POST',

@@ -55,6 +55,12 @@ AI_API_KEY=""
 ENABLE_MOCK_AI=true
 ```
 
+健康检查接口：
+
+- `GET /api/live`：只检查进程是否存活，适合轻量 liveness probe。
+- `GET /api/health`：检查服务和数据库状态，返回数据库延迟。
+- `GET /api/ready`：检查服务是否已准备好承载流量，Docker Compose 使用该接口作为 healthcheck。
+
 ## Docker Compose 一键部署
 
 仓库提供了面向 MVP 演示的 Docker Compose 配置：
