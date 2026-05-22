@@ -12,6 +12,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { useDashboardStore } from '@/stores/dashboardStore'
 import { useDatasetStore } from '@/stores/datasetStore'
 import { useProjectStore } from '@/stores/projectStore'
+import type { UserPlan } from '@/types/auth'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -22,6 +23,7 @@ const projectStore = useProjectStore()
 onMounted(() => {
   if (authStore.isAuthenticated) {
     void projectStore.refreshRemoteProjects()
+    void authStore.loadBillingPlans()
   }
 })
 
@@ -30,6 +32,7 @@ watch(
   (isAuthenticated) => {
     if (isAuthenticated) {
       void projectStore.refreshRemoteProjects()
+      void authStore.loadBillingPlans()
     }
   },
 )
@@ -90,6 +93,15 @@ function openProject(projectId: string): void {
 function logout(): void {
   authStore.logout()
   ElMessage.success('已退出登录')
+}
+
+async function upgradePlan(plan: Exclude<UserPlan, 'FREE'>): Promise<void> {
+  try {
+    await authStore.upgradePlan(plan)
+    ElMessage.success(`已升级到 ${plan} 套餐`)
+  } catch {
+    ElMessage.error(authStore.error || '套餐升级失败')
+  }
 }
 </script>
 
@@ -199,6 +211,9 @@ function logout(): void {
       <UsagePlanCard
         :user="authStore.user"
         :usage="authStore.usage"
+        :plans="authStore.billingPlans"
+        :loading="authStore.loading"
+        @upgrade="upgradePlan"
       />
 
       <div class="panel sample-panel">

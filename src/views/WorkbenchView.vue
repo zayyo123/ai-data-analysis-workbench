@@ -19,6 +19,7 @@ import { useDashboardStore } from '@/stores/dashboardStore'
 import { useDatasetStore } from '@/stores/datasetStore'
 import { useProjectStore } from '@/stores/projectStore'
 import type { ChartRecommendation, FilterCondition } from '@/types/chart'
+import type { UserPlan } from '@/types/auth'
 
 const route = useRoute()
 const router = useRouter()
@@ -32,6 +33,9 @@ const dataset = computed(() => datasetStore.currentDataset)
 
 onMounted(() => {
   void restoreProjectContext()
+  if (authStore.isAuthenticated) {
+    void authStore.loadBillingPlans()
+  }
 })
 
 async function restoreProjectContext(): Promise<void> {
@@ -107,6 +111,15 @@ function saveProject(): void {
 function saveAiReport(): void {
   aiStore.saveCurrentReport()
   projectStore.saveCurrentProject(dashboardStore.dashboard)
+}
+
+async function upgradePlan(plan: Exclude<UserPlan, 'FREE'>): Promise<void> {
+  try {
+    await authStore.upgradePlan(plan)
+    ElMessage.success(`已升级到 ${plan} 套餐`)
+  } catch {
+    ElMessage.error(authStore.error || '套餐升级失败')
+  }
 }
 </script>
 
@@ -218,6 +231,9 @@ function saveAiReport(): void {
         <UsagePlanCard
           :user="authStore.user"
           :usage="authStore.usage"
+          :plans="authStore.billingPlans"
+          :loading="authStore.loading"
+          @upgrade="upgradePlan"
         />
       </aside>
     </section>

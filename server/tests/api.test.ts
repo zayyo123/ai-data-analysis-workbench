@@ -39,6 +39,22 @@ describe('full-stack API MVP', () => {
     })
   })
 
+  it('lists commercial billing plans', async () => {
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/billing/plans',
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(response.json<{ plans: Array<{ id: string; priceMonthly: number }> }>().plans).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'FREE', priceMonthly: 0 }),
+        expect.objectContaining({ id: 'PRO', priceMonthly: 29 }),
+        expect.objectContaining({ id: 'TEAM', priceMonthly: 99 }),
+      ]),
+    )
+  })
+
   it('registers, saves dataset/project, generates AI report and reads usage', async () => {
     const registerResponse = await app.inject({
       method: 'POST',
@@ -212,6 +228,33 @@ describe('full-stack API MVP', () => {
     })
     expect(usageResponse.statusCode).toBe(200)
     expect(usageResponse.json<{ usage: { aiUsedToday: number } }>().usage.aiUsedToday).toBe(5)
+
+    const upgradeResponse = await app.inject({
+      method: 'POST',
+      url: '/api/billing/upgrade',
+      headers: { authorization: authHeader },
+      payload: { plan: 'PRO' },
+    })
+    expect(upgradeResponse.statusCode).toBe(200)
+    const upgradedBody = upgradeResponse.json<{
+      token: string
+      user: { plan: string }
+      usage: { plan: string; aiDailyLimit: number | null }
+    }>()
+    expect(upgradedBody.user.plan).toBe('PRO')
+    expect(upgradedBody.usage).toMatchObject({
+      plan: 'PRO',
+      aiDailyLimit: null,
+    })
+
+    const upgradedAuthHeader = `Bearer ${upgradedBody.token}`
+    const aiAfterUpgradeResponse = await app.inject({
+      method: 'POST',
+      url: '/api/ai/analyze',
+      headers: { authorization: upgradedAuthHeader },
+      payload,
+    })
+    expect(aiAfterUpgradeResponse.statusCode).toBe(200)
   })
 
   it('rate limits repeated auth attempts from the same client', async () => {

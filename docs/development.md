@@ -84,5 +84,8 @@ Windows 中文路径下如遇到 Prisma `db push` 或 `migrate` schema engine �
 4. 再次加载示例数据，确认项目写入后端。
 5. 返回首页打开最近项目，确认 Dashboard 和云端样本快照恢复。
 6. 生成 AI 分析，确认套餐用量增加。
-7. 在 AI 面板点击已保存报告，确认历史报告可读回。
-8. 进入报告页导出 Markdown。
+7. 在套餐卡点击升级 Pro，确认用量变为 AI 不限次。
+8. 在 AI 面板点击已保存报告，确认历史报告可读回。
+9. 进入报告页导出 Markdown。
+
+当前升级接口是 Mock 商业化闭环，用于演示免费版转 Pro / Team 的产品路径；接入真实支付后，应由 Stripe / Lemon Squeezy / Paddle 等支付回调校验订阅状态，再更新用户套餐。

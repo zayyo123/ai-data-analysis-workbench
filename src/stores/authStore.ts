@@ -1,14 +1,15 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { fetchCurrentUser, loginWithEmail, registerWithEmail } from '@/services/api/authApi'
-import { fetchUsageSummary } from '@/services/api/billingApi'
+import { fetchBillingPlans, fetchUsageSummary, upgradeBillingPlan } from '@/services/api/billingApi'
 import { clearStoredToken, getApiErrorMessage, getStoredToken, isUnauthorizedApiError, setStoredToken } from '@/services/api/httpClient'
-import type { AuthUser, UsageSummary } from '@/types/auth'
+import type { AuthUser, BillingPlan, UsageSummary, UserPlan } from '@/types/auth'
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref(getStoredToken())
   const user = ref<AuthUser | null>(null)
   const usage = ref<UsageSummary | null>(null)
+  const billingPlans = ref<BillingPlan[]>([])
   const loading = ref(false)
   const error = ref('')
 
@@ -36,6 +37,7 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await fetchCurrentUser()
       user.value = response.user
       await refreshUsage()
+      await loadBillingPlans()
     } catch (caughtError) {
       logout()
       error.value = isUnauthorizedApiError(caughtError) ? '登录已过期，请重新登录' : getApiErrorMessage(caughtError, '账号会话恢复失败')
@@ -59,6 +61,42 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  async function loadBillingPlans(): Promise<void> {
+    try {
+      const response = await fetchBillingPlans()
+      billingPlans.value = response.plans
+    } catch (caughtError) {
+      error.value = getApiErrorMessage(caughtError, '套餐信息同步失败')
+    }
+  }
+
+  async function upgradePlan(plan: Exclude<UserPlan, 'FREE'>): Promise<void> {
+    if (!token.value) {
+      error.value = '请先登录后再升级套餐'
+      return
+    }
+
+    loading.value = true
+    error.value = ''
+    try {
+      const response = await upgradeBillingPlan(plan)
+      token.value = response.token
+      user.value = response.user
+      usage.value = response.usage
+      setStoredToken(response.token)
+    } catch (caughtError) {
+      if (isUnauthorizedApiError(caughtError)) {
+        logout()
+        error.value = '登录已过期，请重新登录'
+        return
+      }
+      error.value = getApiErrorMessage(caughtError, '套餐升级失败')
+      throw caughtError
+    } finally {
+      loading.value = false
+    }
+  }
+
   function logout(): void {
     token.value = ''
     user.value = null
@@ -75,6 +113,7 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = response.user
       setStoredToken(response.token)
       await refreshUsage()
+      await loadBillingPlans()
     } catch (caughtError) {
       error.value = getApiErrorMessage(caughtError, '账号请求失败')
       throw caughtError
@@ -87,6 +126,7 @@ export const useAuthStore = defineStore('auth', () => {
     token,
     user,
     usage,
+    billingPlans,
     loading,
     error,
     isAuthenticated,
@@ -95,6 +135,8 @@ export const useAuthStore = defineStore('auth', () => {
     login,
     restoreSession,
     refreshUsage,
+    loadBillingPlans,
+    upgradePlan,
     logout,
   }
 })

@@ -12,3 +12,11 @@ export interface UsageSummary {
   aiDailyLimit: number | null
   aiUsedToday: number
 }
+
+export interface BillingPlan {
+  id: UserPlan
+  name: string
+  priceMonthly: number
+  aiDailyLimit: number | null
+  features: string[]
+}
