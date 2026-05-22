@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus/es/components/message/index'
 import AiAnalysisPanel from '@/components/ai/AiAnalysisPanel.vue'
@@ -30,6 +30,15 @@ const dashboardStore = useDashboardStore()
 const projectStore = useProjectStore()
 
 const dataset = computed(() => datasetStore.currentDataset)
+const projectNameDraft = ref('')
+
+watch(
+  () => projectStore.currentProject?.name,
+  (name) => {
+    projectNameDraft.value = name ?? ''
+  },
+  { immediate: true },
+)
 
 onMounted(() => {
   void restoreProjectContext()
@@ -108,6 +117,17 @@ function saveProject(): void {
   projectStore.saveCurrentProject(dashboardStore.dashboard)
 }
 
+function commitProjectName(): void {
+  const nextName = projectNameDraft.value.trim()
+  if (!nextName) {
+    projectNameDraft.value = projectStore.currentProject?.name ?? ''
+    return
+  }
+
+  projectStore.renameCurrentProject(nextName)
+  projectNameDraft.value = projectStore.currentProject?.name ?? nextName
+}
+
 function saveAiReport(): void {
   aiStore.saveCurrentReport()
   projectStore.saveCurrentProject(dashboardStore.dashboard)
@@ -128,7 +148,15 @@ async function upgradePlan(plan: Exclude<UserPlan, 'FREE'>): Promise<void> {
     <header class="topbar">
       <div class="brand">
         <h1 class="brand-title">
-          数据分析工作台
+          <el-input
+            v-if="projectStore.currentProject"
+            v-model="projectNameDraft"
+            class="project-name-input"
+            aria-label="项目名称"
+            @keyup.enter="commitProjectName"
+            @blur="commitProjectName"
+          />
+          <span v-else>数据分析工作台</span>
         </h1>
         <p class="brand-subtitle">
           {{ dataset?.fileName ?? '请上传 CSV / Excel 文件开始分析' }}

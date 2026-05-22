@@ -19,6 +19,10 @@ test('用户可以上传 CSV、添加推荐图表并生成 Mock AI 分析', asyn
   await expect(page.getByText('字段列表')).toBeVisible()
   await expect(page.getByText('数据预览')).toBeVisible()
 
+  await page.getByLabel('项目名称').fill('销售复盘 Demo')
+  await page.keyboard.press('Enter')
+  await expect(page.getByLabel('项目名称')).toHaveValue('销售复盘 Demo')
+
   await page.getByRole('button', { name: '添加到看板' }).first().click()
   await expect(page.getByTestId('dashboard-chart-card')).toBeVisible()
   await expect(page.getByText('图表配置')).toBeVisible()
@@ -29,6 +33,9 @@ test('用户可以上传 CSV、添加推荐图表并生成 Mock AI 分析', asyn
 
   await page.getByRole('button', { name: '生成 AI 分析' }).click()
   await expect(page.getByText('数据概览')).toBeVisible({ timeout: 10_000 })
+
+  await page.getByRole('button', { name: '返回首页' }).click()
+  await expect(page.locator('.project-list').getByRole('button', { name: /销售复盘 Demo/ })).toBeVisible()
 })
 
 test('用户可以删除本地最近项目', async ({ page }) => {

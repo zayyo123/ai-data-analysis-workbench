@@ -40,6 +40,15 @@ export const useProjectStore = defineStore('project', () => {
     void syncCurrentProject()
   }
 
+  function renameCurrentProject(name: string): void {
+    if (!currentProject.value) return
+    const nextName = name.trim()
+    if (!nextName || nextName === currentProject.value.name) return
+
+    currentProject.value.name = nextName
+    saveCurrentProject()
+  }
+
   function loadProject(projectId: string): void {
     currentProject.value = projects.value.find((project) => project.id === projectId) ?? null
   }
@@ -142,6 +151,7 @@ export const useProjectStore = defineStore('project', () => {
     syncError,
     createProject,
     saveCurrentProject,
+    renameCurrentProject,
     loadProject,
     addAiReport,
     upsertProject,
