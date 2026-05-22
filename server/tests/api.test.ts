@@ -106,4 +106,85 @@ describe('full-stack API MVP', () => {
     expect(usageResponse.statusCode).toBe(200)
     expect(usageResponse.json<{ usage: { aiUsedToday: number } }>().usage.aiUsedToday).toBe(1)
   })
+
+  it('blocks free users after the daily AI analysis quota is exhausted', async () => {
+    const registerResponse = await app.inject({
+      method: 'POST',
+      url: '/api/auth/register',
+      payload: {
+        email: 'quota@example.com',
+        password: 'password123',
+        name: 'Quota Tester',
+      },
+    })
+    expect(registerResponse.statusCode).toBe(200)
+    const authHeader = `Bearer ${registerResponse.json<{ token: string }>().token}`
+
+    const datasetResponse = await app.inject({
+      method: 'POST',
+      url: '/api/datasets',
+      headers: { authorization: authHeader },
+      payload: {
+        name: 'Quota Sales',
+        fileName: 'quota-sales.csv',
+        fileType: 'csv',
+        rowCount: 2,
+        fields: [{ name: 'revenue', type: 'number' }],
+        sampleRows: [{ revenue: 100 }],
+      },
+    })
+    expect(datasetResponse.statusCode).toBe(200)
+    const datasetId = datasetResponse.json<{ dataset: { id: string } }>().dataset.id
+
+    const projectResponse = await app.inject({
+      method: 'POST',
+      url: '/api/projects',
+      headers: { authorization: authHeader },
+      payload: {
+        name: 'Quota Project',
+        datasetId,
+        dashboard: { charts: [] },
+        filters: [],
+      },
+    })
+    expect(projectResponse.statusCode).toBe(200)
+    const projectId = projectResponse.json<{ project: { id: string } }>().project.id
+
+    const payload = {
+      projectId,
+      datasetSummary: { rowCount: 2 },
+      dashboardSummary: { charts: [] },
+      analysisType: 'summary',
+    }
+
+    // 免费版每天允许 5 次 AI 分析；接口层必须兜住限制，不能只依赖前端提示。
+    for (let index = 0; index < 5; index += 1) {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/ai/analyze',
+        headers: { authorization: authHeader },
+        payload,
+      })
+      expect(response.statusCode).toBe(200)
+    }
+
+    const blockedResponse = await app.inject({
+      method: 'POST',
+      url: '/api/ai/analyze',
+      headers: { authorization: authHeader },
+      payload,
+    })
+    expect(blockedResponse.statusCode).toBe(429)
+    expect(blockedResponse.json<{ error: { code: string; message: string } }>().error).toMatchObject({
+      code: 'USAGE_LIMIT_EXCEEDED',
+    })
+
+    const usageResponse = await app.inject({
+      method: 'GET',
+      url: '/api/billing/usage',
+      headers: { authorization: authHeader },
+    })
+    expect(usageResponse.statusCode).toBe(200)
+    expect(usageResponse.json<{ usage: { aiUsedToday: number } }>().usage.aiUsedToday).toBe(5)
+  })
 })

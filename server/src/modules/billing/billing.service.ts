@@ -3,6 +3,13 @@ import type { AuthUser } from '../../auth.js'
 
 const FREE_DAILY_AI_LIMIT = 5
 
+export class UsageLimitError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'UsageLimitError'
+  }
+}
+
 export async function getUsageSummary(user: AuthUser) {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -28,7 +35,8 @@ export async function assertCanUseAi(user: AuthUser): Promise<void> {
 
   const usage = await getUsageSummary(user)
   if (usage.aiUsedToday >= FREE_DAILY_AI_LIMIT) {
-    throw new Error('免费版今日 AI 分析次数已用完，请升级到 Pro')
+    // 免费版先在服务端做硬限制，避免前端绕过用量提示后仍能继续消耗 AI 额度。
+    throw new UsageLimitError('免费版今日 AI 分析次数已用完，请升级到 Pro')
   }
 }
 

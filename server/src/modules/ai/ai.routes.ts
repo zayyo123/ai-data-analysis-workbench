@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import { requireAuth } from '../../auth.js'
 import { sendError } from '../../utils/errors.js'
+import { UsageLimitError } from '../billing/billing.service.js'
 import { analyzeSchema } from './ai.schema.js'
 import { analyzeProject } from './ai.service.js'
 
@@ -14,6 +15,10 @@ export async function aiRoutes(app: FastifyInstance) {
       const report = await analyzeProject(user, parsed.data)
       return { report }
     } catch (error) {
+      if (error instanceof UsageLimitError) {
+        return sendError(reply, 429, error.message, 'USAGE_LIMIT_EXCEEDED')
+      }
+
       return sendError(reply, 400, error instanceof Error ? error.message : 'AI 分析失败', 'AI_ANALYZE_FAILED')
     }
   })
