@@ -4,14 +4,40 @@
 
 ## 本地开发
 
+前端本地模式：
+
 ```bash
 npm install
+npm run dev -- --port 5174
+```
+
+后端：
+
+```bash
+cd server
+npm install
+copy .env.example .env
+npm run prisma:generate
+npm run prisma:migrate
 npm run dev
 ```
 
 ## 提交前检查
 
+前端：
+
 ```bash
+npm run lint
+npm run typecheck
+npm run test
+npm run build
+npm run e2e
+```
+
+后端：
+
+```bash
+cd server
 npm run typecheck
 npm run test
 npm run build

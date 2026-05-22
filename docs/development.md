@@ -1,33 +1,85 @@
 # Development
 
-## 启动
+## 环境
+
+- Node.js >= 20
+- npm >= 10
+- 前端默认端口：`5174`
+- 后端默认端口：`4000`
+
+## 前端本地模式
+
+只运行前端即可完成上传、解析、图表、Mock AI 和 Markdown 导出。
 
 ```bash
 npm install
+npm run dev -- --port 5174
+```
+
+## 全栈开发模式
+
+终端 A：
+
+```bash
+cd server
+npm install
+copy .env.example .env
+npm run prisma:generate
+npm run prisma:migrate
 npm run dev
 ```
 
-## 验证
+终端 B：
 
 ```bash
+npm install
+npm run dev -- --port 5174
+```
+
+如果后端没有启动，前端仍然可以走本地演示模式；注册登录、云端项目保存、AI 用量和报告列表需要后端在线。
+
+## 数据库说明
+
+第一版使用 SQLite + Prisma，适合本地演示和轻量部署。后端保存：
+
+- 用户和密码哈希。
+- 数据集字段摘要和前 20 行样本。
+- 项目 Dashboard 配置。
+- AI 报告内容。
+- AI 用量记录。
+
+后端 MVP 不保存全量明细 rows，避免 SQLite 文件快速膨胀。云端恢复工作台时使用数据样本快照，完整明细仍由用户上传或后续对象存储方案承接。
+
+## 验证命令
+
+前端：
+
+```bash
+npm run lint
+npm run typecheck
+npm run test
+npm run build
+npm run e2e
+```
+
+后端：
+
+```bash
+cd server
 npm run typecheck
 npm run test
 npm run build
 ```
 
+Windows 中文路径下如遇到 Prisma `db push` 或 `migrate` schema engine 空错误，可以先在纯英文路径验证数据库迁移；当前 `server/tests/setupTestDatabase.ts` 已用 SQL 建表绕开本地测试阻塞。
+
 ## 示例流程
 
 1. 打开首页。
-2. 点击“销售经营分析”示例数据，或上传 `examples/sales.csv`。
-3. 查看字段识别结果。
-4. 添加推荐图表到 Dashboard。
-5. 点击 Dashboard 图表，在右侧配置面板编辑标题、字段、聚合方式和 Top N。
-6. 生成 Mock AI 分析。
-7. 保存 AI 结果并导出 Markdown 报告。
-
-## 当前增强点
-
-- 首页内置示例数据入口，方便演示和面试讲解。
-- Dashboard 图表支持选中态和配置编辑。
-- 报告页使用 Markdown 渲染，不再只是纯文本预览。
-- E2E 覆盖示例数据链路和本地 CSV 上传链路。
+2. 未登录时点击“销售经营分析”示例数据，验证本地模式完整链路。
+3. 注册账号并登录。
+4. 再次加载示例数据，确认项目写入后端。
+5. 返回首页打开最近项目，确认 Dashboard 和云端样本快照恢复。
+6. 生成 AI 分析，确认套餐用量增加。
+7. 在 AI 面板点击已保存报告，确认历史报告可读回。
+8. 进入报告页导出 Markdown。

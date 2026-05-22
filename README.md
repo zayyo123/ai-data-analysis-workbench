@@ -1,8 +1,18 @@
 # AI Data Analysis Workbench
 
-一个面向真实数据分析场景的前端 AI 数据分析工作台。项目支持 CSV / Excel 上传解析、字段建模、数据预览、图表推荐、Dashboard 编辑、AI 流式分析、报告导出和本地项目管理。
+一个面向真实数据分析场景的全栈 AI 数据分析工作台。项目支持 CSV / Excel 上传解析、字段建模、数据预览、图表推荐、Dashboard 编辑、AI 分析、报告导出、账号登录、云端项目保存、用量限制和本地模式兜底。
 
-本仓库的目标是做成一个可以开源、可以部署、可以面试讲解、也可以继续扩展的完整前端项目，而不是一次性演示页面。
+本仓库的目标是做成一个可以开源、可以部署、可以面试讲解、也可以继续扩展的完整商业化 MVP，而不是一次性演示页面。
+
+## 当前全栈 MVP
+
+当前版本已经具备一条可演示的前后端闭环：
+
+1. 未登录用户可以直接上传示例数据，在浏览器本地完成分析、图表和 Markdown 报告导出。
+2. 注册 / 登录后，前端会接入 Fastify 后端，把数据集摘要、项目、Dashboard 和 AI 报告保存到 SQLite。
+3. 后端提供 JWT 鉴权、用户信息、数据集、项目、AI 分析报告和用量限制接口。
+4. 免费套餐默认每天 5 次 AI 分析；无真实 AI Key 时走 Mock AI，保证开源项目可直接演示。
+5. 已配置前后端 CI、Vitest 单元测试、Fastify API 集成测试和 Playwright E2E。
 
 ## 项目定位
 
@@ -31,6 +41,11 @@ AI Data Analysis Workbench 是一个运行在浏览器端的数据分析应用�
 
 - 首页支持上传本地 CSV / Excel 文件。
 - 首页支持一键加载内置示例数据，无需手动选择文件即可体验完整流程。
+- 支持注册、登录、JWT 会话恢复和用户信息读取。
+- 登录后支持云端保存数据集摘要、项目 Dashboard、AI 报告和用量记录。
+- 工作台支持从远程项目恢复 Dashboard、字段和数据样本快照。
+- 首页和工作台支持套餐与 AI 用量展示。
+- AI 面板支持读取已保存报告并载入历史结论。
 - 工作台支持字段识别、字段统计和字段类型手动修正。
 - 工作台支持前 100 行数据预览、关键词搜索和空值高亮。
 - 工作台支持按字段类型自动推荐图表，并一键添加到 Dashboard。
@@ -120,7 +135,89 @@ AI Data Analysis Workbench 是一个运行在浏览器端的数据分析应用�
 - npm >= 10
 - Git >= 2.40
 
-### 初始化项目
+### 只体验前端本地模式
+
+本地模式不需要后端服务，适合快速演示上传、图表推荐、Dashboard、Mock AI 和 Markdown 导出。
+
+```bash
+npm install
+npm run dev -- --port 5174
+```
+
+访问：
+
+```text
+http://127.0.0.1:5174
+```
+
+打开首页后可以选择两种方式体验：
+
+- 点击上传区选择 `examples/sales.csv` 或自己的 CSV / Excel 文件。
+- 点击首页“示例数据”中的“销售经营分析”或“用户增长分析”，直接进入工作台。
+
+### 启动完整全栈模式
+
+全栈模式会启用注册登录、云端项目保存、AI 报告记录和用量限制。
+
+1. 安装前端依赖：
+
+```bash
+npm install
+```
+
+2. 安装后端依赖：
+
+```bash
+cd server
+npm install
+```
+
+3. 准备后端环境变量：
+
+```bash
+copy .env.example .env
+```
+
+在 macOS / Linux 下使用：
+
+```bash
+cp .env.example .env
+```
+
+4. 初始化 Prisma Client 和数据库：
+
+```bash
+npm run prisma:generate
+npm run prisma:migrate
+```
+
+如果你在 Windows 中文路径下遇到 Prisma schema engine 空错误，建议临时把仓库 clone 到纯英文路径，或先使用后端测试里的 SQL 建表策略继续开发。该问题已记录在 `docs/automation-notes.md`。
+
+5. 启动后端：
+
+```bash
+npm run dev
+```
+
+后端默认运行在：
+
+```text
+http://127.0.0.1:4000
+```
+
+6. 新开一个终端启动前端：
+
+```bash
+npm run dev -- --port 5174
+```
+
+前端默认请求：
+
+```text
+VITE_API_BASE_URL=http://127.0.0.1:4000/api
+```
+
+### 旧项目初始化参考
 
 如果当前目录还没有 Vite 工程，执行：
 
@@ -142,29 +239,6 @@ npm install markdown-it html2canvas jspdf
 npm install -D eslint prettier vitest @vue/test-utils jsdom playwright
 npm install -D @types/papaparse @types/file-saver
 ```
-
-启动开发服务：
-
-```bash
-npm run dev
-```
-
-默认访问地址：
-
-```text
-http://127.0.0.1:5173
-```
-
-如果本机端口已被占用，可以指定新端口：
-
-```bash
-npm run dev -- --port 5174
-```
-
-打开首页后可以选择两种方式体验：
-
-- 点击上传区选择 `examples/sales.csv` 或自己的 CSV / Excel 文件。
-- 点击首页“示例数据”中的“销售经营分析”或“用户增长分析”，直接进入工作台。
 
 生产构建：
 
@@ -206,7 +280,7 @@ npm run e2e
 
 项目必须支持无 API Key 的 Mock 模式，保证开源仓库可以直接运行。
 
-创建 `.env.example`：
+前端 `.env.example`：
 
 ```bash
 # AI 服务地址。没有真实服务时可以留空，应用会自动走 Mock 模式。
@@ -217,6 +291,9 @@ VITE_AI_API_KEY=
 
 # 是否启用 Mock AI。true 表示使用前端内置模拟流式输出。
 VITE_ENABLE_MOCK_AI=true
+
+# 后端 API 地址。未启动后端时，前端仍可使用本地模式兜底。
+VITE_API_BASE_URL=http://127.0.0.1:4000/api
 ```
 
 创建 `.env.local`：
@@ -225,6 +302,18 @@ VITE_ENABLE_MOCK_AI=true
 VITE_AI_API_BASE_URL=https://your-api-domain.com
 VITE_AI_API_KEY=your_api_key
 VITE_ENABLE_MOCK_AI=false
+```
+
+后端 `server/.env.example`：
+
+```bash
+DATABASE_URL="file:./dev.db"
+JWT_SECRET="replace-with-a-long-random-secret"
+PORT=4000
+CORS_ORIGIN="http://127.0.0.1:5174,http://localhost:5174"
+AI_API_BASE_URL=""
+AI_API_KEY=""
+ENABLE_MOCK_AI=true
 ```
 
 ## 项目目录结构
