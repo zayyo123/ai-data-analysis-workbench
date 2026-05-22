@@ -13,3 +13,5 @@ test-results/
 *.db
 *.db-journal
 server/dist/
+server/prisma/e2e.db
+server/prisma/e2e.db-journal

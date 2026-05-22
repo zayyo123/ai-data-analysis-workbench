@@ -60,6 +60,7 @@ npm run typecheck
 npm run test
 npm run build
 npm run e2e
+npm run e2e:fullstack
 ```
 
 后端：
@@ -72,6 +73,8 @@ npm run build
 ```
 
 Windows 中文路径下如遇到 Prisma `db push` 或 `migrate` schema engine 空错误，可以先在纯英文路径验证数据库迁移；当前 `server/tests/setupTestDatabase.ts` 已用 SQL 建表绕开本地测试阻塞。
+
+`npm run e2e:fullstack` 会使用 `server/.env.e2e` 启动真实后端，并在执行前重置 `server/prisma/e2e.db`。它覆盖注册、云端项目保存、AI 报告生成、用量展示和远程项目恢复链路。
 
 ## 示例流程
 
