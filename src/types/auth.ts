@@ -15,6 +15,13 @@ export interface UsageSummary {
   projectCount: number
 }
 
+export interface UsageLog {
+  id: string
+  action: string
+  amount: number
+  createdAt: number
+}
+
 export interface BillingPlan {
   id: UserPlan
   name: string

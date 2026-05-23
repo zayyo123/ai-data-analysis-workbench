@@ -1,14 +1,15 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { changePassword, fetchCurrentUser, loginWithEmail, registerWithEmail, updateProfile } from '@/services/api/authApi'
-import { fetchBillingPlans, fetchUsageSummary, upgradeBillingPlan } from '@/services/api/billingApi'
+import { fetchBillingPlans, fetchUsageLogs, fetchUsageSummary, upgradeBillingPlan } from '@/services/api/billingApi'
 import { clearStoredToken, getApiErrorMessage, getStoredToken, isUnauthorizedApiError, setStoredToken } from '@/services/api/httpClient'
-import type { AuthUser, BillingPlan, UsageSummary, UserPlan } from '@/types/auth'
+import type { AuthUser, BillingPlan, UsageLog, UsageSummary, UserPlan } from '@/types/auth'
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref(getStoredToken())
   const user = ref<AuthUser | null>(null)
   const usage = ref<UsageSummary | null>(null)
+  const usageLogs = ref<UsageLog[]>([])
   const billingPlans = ref<BillingPlan[]>([])
   const loading = ref(false)
   const error = ref('')
@@ -68,6 +69,8 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const response = await fetchUsageSummary()
       usage.value = response.usage
+      const logsResponse = await fetchUsageLogs()
+      usageLogs.value = logsResponse.logs
     } catch (caughtError) {
       if (isUnauthorizedApiError(caughtError)) {
         logout()
@@ -156,6 +159,7 @@ export const useAuthStore = defineStore('auth', () => {
     token.value = ''
     user.value = null
     usage.value = null
+    usageLogs.value = []
     sessionRestored.value = true
     clearStoredToken()
   }
@@ -198,6 +202,7 @@ export const useAuthStore = defineStore('auth', () => {
     token,
     user,
     usage,
+    usageLogs,
     billingPlans,
     loading,
     error,

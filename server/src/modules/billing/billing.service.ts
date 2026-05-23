@@ -77,6 +77,14 @@ export async function getUsageSummary(user: AuthUser) {
   }
 }
 
+export async function listRecentUsageLogs(user: AuthUser, limit = 8) {
+  return prisma.usageLog.findMany({
+    where: { userId: user.id },
+    orderBy: { createdAt: 'desc' },
+    take: Math.max(1, Math.min(limit, 20)),
+  })
+}
+
 export async function assertCanUseAi(user: AuthUser): Promise<void> {
   if (user.plan !== 'FREE') return
 

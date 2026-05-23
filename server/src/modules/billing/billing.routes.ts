@@ -4,7 +4,7 @@ import { requireAuth } from '../../auth.js'
 import { env } from '../../config/env.js'
 import { sendError } from '../../utils/errors.js'
 import { toPublicUser } from '../auth/auth.service.js'
-import { getUsageSummary, listBillingPlans, upgradeUserPlan } from './billing.service.js'
+import { getUsageSummary, listBillingPlans, listRecentUsageLogs, upgradeUserPlan } from './billing.service.js'
 
 const upgradePlanSchema = z.object({
   plan: z.enum(['PRO', 'TEAM']),
@@ -19,6 +19,15 @@ export async function billingRoutes(app: FastifyInstance) {
     try {
       const user = await requireAuth(request)
       return { usage: await getUsageSummary(user) }
+    } catch {
+      return sendError(reply, 401, '请先登录', 'UNAUTHORIZED')
+    }
+  })
+
+  app.get('/usage/logs', async (request, reply) => {
+    try {
+      const user = await requireAuth(request)
+      return { logs: await listRecentUsageLogs(user) }
     } catch {
       return sendError(reply, 401, '请先登录', 'UNAUTHORIZED')
     }

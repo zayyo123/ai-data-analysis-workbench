@@ -282,6 +282,7 @@ async function upgradePlan(plan: Exclude<UserPlan, 'FREE'>): Promise<void> {
         <UsagePlanCard
           :user="authStore.user"
           :usage="authStore.usage"
+          :usage-logs="authStore.usageLogs"
           :plans="authStore.billingPlans"
           :loading="authStore.loading"
           @upgrade="upgradePlan"

@@ -261,6 +261,16 @@ describe('full-stack API MVP', () => {
     expect(usageResponse.statusCode).toBe(200)
     expect(usageResponse.json<{ usage: { aiUsedToday: number } }>().usage.aiUsedToday).toBe(1)
 
+    const usageLogsResponse = await app.inject({
+      method: 'GET',
+      url: '/api/billing/usage/logs',
+      headers: { authorization: authHeader },
+    })
+    expect(usageLogsResponse.statusCode).toBe(200)
+    expect(usageLogsResponse.json<{ logs: Array<{ action: string; amount: number }> }>().logs).toEqual(
+      expect.arrayContaining([expect.objectContaining({ action: 'ai.analyze', amount: 1 })]),
+    )
+
     const deleteProjectResponse = await app.inject({
       method: 'DELETE',
       url: `/api/projects/${projectId}`,

@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { AuthUser, BillingPlan, UsageSummary, UserPlan } from '@/types/auth'
+import type { AuthUser, BillingPlan, UsageLog, UsageSummary, UserPlan } from '@/types/auth'
 
 const props = defineProps<{
   user: AuthUser | null
   usage: UsageSummary | null
+  usageLogs?: UsageLog[]
   plans: BillingPlan[]
   loading?: boolean
 }>()
@@ -44,6 +45,12 @@ const planDescription = computed(() => {
 })
 
 const paidPlans = computed(() => props.plans.filter((plan) => plan.id !== 'FREE'))
+const recentUsageLogs = computed(() => props.usageLogs?.slice(0, 5) ?? [])
+
+function formatUsageAction(action: string): string {
+  if (action === 'ai.analyze') return 'AI 分析'
+  return action
+}
 
 function upgradePlan(plan: BillingPlan): void {
   if (plan.id === 'FREE') return
@@ -97,6 +104,24 @@ function upgradePlan(plan: BillingPlan): void {
       <p class="usage-description">
         {{ planDescription }}
       </p>
+
+      <div
+        v-if="recentUsageLogs.length"
+        class="usage-log-list"
+      >
+        <div class="usage-log-header">
+          <strong>最近用量</strong>
+          <span>用于排查额度变化</span>
+        </div>
+        <div
+          v-for="log in recentUsageLogs"
+          :key="log.id"
+          class="usage-log-item"
+        >
+          <span>{{ formatUsageAction(log.action) }} x{{ log.amount }}</span>
+          <time>{{ new Date(log.createdAt).toLocaleString() }}</time>
+        </div>
+      </div>
 
       <div
         v-if="isLoggedIn && paidPlans.length"
@@ -164,6 +189,40 @@ function upgradePlan(plan: BillingPlan): void {
 
 .usage-description {
   color: #4b5563;
+}
+
+.usage-log-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 10px;
+}
+
+.usage-log-header,
+.usage-log-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.usage-log-header strong {
+  color: #111827;
+  font-size: 13px;
+}
+
+.usage-log-header span,
+.usage-log-item time {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.usage-log-item {
+  border-radius: 6px;
+  background: #f9fafb;
+  padding: 8px;
+  font-size: 12px;
 }
 
 .plan-grid {
