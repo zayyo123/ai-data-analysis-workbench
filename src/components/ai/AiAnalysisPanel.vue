@@ -15,6 +15,7 @@ const emit = defineEmits<{
   save: []
   clear: []
   loadReport: [report: AiReport]
+  deleteReport: [report: AiReport]
 }>()
 </script>
 
@@ -81,15 +82,28 @@ const emit = defineEmits<{
         <p class="muted report-list-title">
           已保存报告
         </p>
-        <button
+        <div
           v-for="report in reports.slice(0, 5)"
           :key="report.id"
           class="report-item"
-          @click="emit('loadReport', report)"
         >
-          <strong>{{ report.promptTitle }}</strong>
-          <span>{{ new Date(report.createdAt).toLocaleString() }}</span>
-        </button>
+          <button
+            class="report-open"
+            @click="emit('loadReport', report)"
+          >
+            <strong>{{ report.promptTitle }}</strong>
+            <span>{{ new Date(report.createdAt).toLocaleString() }}</span>
+          </button>
+          <el-button
+            class="report-delete"
+            size="small"
+            type="danger"
+            plain
+            @click="emit('deleteReport', report)"
+          >
+            删除
+          </el-button>
+        </div>
       </div>
     </div>
   </div>
@@ -129,23 +143,38 @@ pre {
 }
 
 .report-item {
-  display: flex;
-  cursor: pointer;
-  flex-direction: column;
-  gap: 3px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   background: #ffffff;
   padding: 10px;
-  text-align: left;
 }
 
 .report-item:hover {
   border-color: #0f766e;
 }
 
-.report-item span {
+.report-open {
+  display: flex;
+  min-width: 0;
+  cursor: pointer;
+  flex-direction: column;
+  gap: 3px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+}
+
+.report-open span {
   color: #6b7280;
   font-size: 12px;
+}
+
+.report-delete {
+  flex: none;
 }
 </style>

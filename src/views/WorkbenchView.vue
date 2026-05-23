@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 import AiAnalysisPanel from '@/components/ai/AiAnalysisPanel.vue'
 import UsagePlanCard from '@/components/billing/UsagePlanCard.vue'
 import ChartConfigPanel from '@/components/chart/ChartConfigPanel.vue'
@@ -20,6 +21,7 @@ import { useDatasetStore } from '@/stores/datasetStore'
 import { useProjectStore } from '@/stores/projectStore'
 import type { ChartRecommendation, FilterCondition } from '@/types/chart'
 import type { UserPlan } from '@/types/auth'
+import type { AiReport } from '@/types/project'
 
 const route = useRoute()
 const router = useRouter()
@@ -131,6 +133,26 @@ function commitProjectName(): void {
 function saveAiReport(): void {
   aiStore.saveCurrentReport()
   projectStore.saveCurrentProject(dashboardStore.dashboard)
+}
+
+async function deleteAiReport(report: AiReport): Promise<void> {
+  try {
+    await ElMessageBox.confirm(`确定删除「${report.promptTitle}」吗？`, '删除 AI 报告', {
+      confirmButtonText: '删除',
+      cancelButtonText: '取消',
+      type: 'warning',
+    })
+  } catch {
+    return
+  }
+
+  try {
+    await projectStore.deleteAiReport(report.id)
+    if (aiStore.output === report.content) aiStore.clearCurrentOutput()
+    ElMessage.success('报告已删除')
+  } catch {
+    ElMessage.error(projectStore.syncError || '报告删除失败')
+  }
 }
 
 async function upgradePlan(plan: Exclude<UserPlan, 'FREE'>): Promise<void> {
@@ -254,6 +276,7 @@ async function upgradePlan(plan: Exclude<UserPlan, 'FREE'>): Promise<void> {
           @stop="aiStore.stopGeneration"
           @save="saveAiReport"
           @load-report="aiStore.loadReport"
+          @delete-report="deleteAiReport"
           @clear="aiStore.clearCurrentOutput"
         />
         <UsagePlanCard

@@ -20,3 +20,9 @@ export async function listRemoteReports(projectId: string): Promise<AiReport[]> 
     createdAt: new Date(report.createdAt).getTime(),
   }))
 }
+
+export function deleteRemoteReport(reportId: string): Promise<{ ok: true }> {
+  return apiRequest<{ ok: true }>(`/reports/${reportId}`, {
+    method: 'DELETE',
+  })
+}

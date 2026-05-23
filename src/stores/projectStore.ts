@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { getApiErrorMessage, isUnauthorizedApiError } from '@/services/api/httpClient'
 import { deleteRemoteProject, getRemoteProject, listRemoteProjects, updateRemoteProject } from '@/services/api/projectApi'
-import { listRemoteReports } from '@/services/api/reportApi'
+import { deleteRemoteReport, listRemoteReports } from '@/services/api/reportApi'
 import type { DashboardConfig } from '@/types/chart'
 import type { AiReport, AnalysisProject } from '@/types/project'
 import { loadProjects, saveProjects } from '@/services/storage/projectStorage'
@@ -58,6 +58,30 @@ export const useProjectStore = defineStore('project', () => {
     currentProject.value.aiReports = currentProject.value.aiReports.filter((item) => item.id !== report.id)
     currentProject.value.aiReports.push(report)
     saveCurrentProject()
+  }
+
+  async function deleteAiReport(reportId: string): Promise<void> {
+    const authStore = useAuthStore()
+
+    if (authStore.isAuthenticated) {
+      syncError.value = ''
+      try {
+        await deleteRemoteReport(reportId)
+      } catch (caughtError) {
+        syncError.value = handleRemoteError(authStore, caughtError, '远程报告删除失败，本地报告已保留')
+        throw caughtError
+      }
+    }
+
+    removeLocalAiReport(reportId)
+  }
+
+  function removeLocalAiReport(reportId: string): void {
+    if (!currentProject.value) return
+    const nextProject = removeReportFromProject(currentProject.value, reportId)
+    currentProject.value = nextProject
+    projects.value = projects.value.map((project) => (project.id === nextProject.id ? nextProject : project))
+    persist()
   }
 
   function upsertProject(project: AnalysisProject): void {
@@ -154,6 +178,7 @@ export const useProjectStore = defineStore('project', () => {
     renameCurrentProject,
     loadProject,
     addAiReport,
+    deleteAiReport,
     upsertProject,
     refreshRemoteProjects,
     loadRemoteProject,
@@ -162,6 +187,14 @@ export const useProjectStore = defineStore('project', () => {
     deleteProject,
   }
 })
+
+function removeReportFromProject(project: AnalysisProject, reportId: string): AnalysisProject {
+  return {
+    ...project,
+    aiReports: project.aiReports.filter((report) => report.id !== reportId),
+    updatedAt: Date.now(),
+  }
+}
 
 function cloneDashboard(dashboard: DashboardConfig): DashboardConfig {
   // Pinia 返回的对象可能是响应式 Proxy，structuredClone 无法直接克隆。

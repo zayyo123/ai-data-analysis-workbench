@@ -138,7 +138,51 @@ describe('full-stack API MVP', () => {
       headers: { authorization: authHeader },
     })
     expect(reportsResponse.statusCode).toBe(200)
-    expect(reportsResponse.json<{ reports: unknown[] }>().reports).toHaveLength(1)
+    const reports = reportsResponse.json<{ reports: Array<{ id: string }> }>().reports
+    expect(reports).toHaveLength(1)
+
+    const intruderRegisterResponse = await app.inject({
+      method: 'POST',
+      url: '/api/auth/register',
+      payload: {
+        email: 'report-intruder@example.com',
+        password: 'password123',
+        name: 'Report Intruder',
+      },
+    })
+    expect(intruderRegisterResponse.statusCode).toBe(200)
+
+    const intruderDeleteResponse = await app.inject({
+      method: 'DELETE',
+      url: `/api/reports/${reports[0].id}`,
+      headers: { authorization: `Bearer ${intruderRegisterResponse.json<{ token: string }>().token}` },
+    })
+    expect(intruderDeleteResponse.statusCode).toBe(404)
+    expect(intruderDeleteResponse.json<{ error: { code: string } }>().error.code).toBe('REPORT_NOT_FOUND')
+
+    const reportsAfterIntruderResponse = await app.inject({
+      method: 'GET',
+      url: `/api/reports/${projectId}`,
+      headers: { authorization: authHeader },
+    })
+    expect(reportsAfterIntruderResponse.statusCode).toBe(200)
+    expect(reportsAfterIntruderResponse.json<{ reports: unknown[] }>().reports).toHaveLength(1)
+
+    const deleteReportResponse = await app.inject({
+      method: 'DELETE',
+      url: `/api/reports/${reports[0].id}`,
+      headers: { authorization: authHeader },
+    })
+    expect(deleteReportResponse.statusCode).toBe(200)
+    expect(deleteReportResponse.json<{ ok: boolean }>().ok).toBe(true)
+
+    const reportsAfterDeleteResponse = await app.inject({
+      method: 'GET',
+      url: `/api/reports/${projectId}`,
+      headers: { authorization: authHeader },
+    })
+    expect(reportsAfterDeleteResponse.statusCode).toBe(200)
+    expect(reportsAfterDeleteResponse.json<{ reports: unknown[] }>().reports).toHaveLength(0)
 
     const usageResponse = await app.inject({
       method: 'GET',
