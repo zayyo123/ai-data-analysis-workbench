@@ -54,8 +54,33 @@ export async function updateProject(user: AuthUser, projectId: string, input: Up
 }
 
 export async function deleteProject(user: AuthUser, projectId: string) {
-  return prisma.project.deleteMany({
-    where: { id: projectId, userId: user.id },
+  return prisma.$transaction(async (transaction) => {
+    const project = await transaction.project.findFirst({
+      where: { id: projectId, userId: user.id },
+      select: { id: true, datasetId: true },
+    })
+
+    if (!project) {
+      return { count: 0, cleanedDataset: false }
+    }
+
+    const deletedProject = await transaction.project.deleteMany({
+      where: { id: projectId, userId: user.id },
+    })
+
+    const remainingProjectCount = await transaction.project.count({
+      where: { userId: user.id, datasetId: project.datasetId },
+    })
+
+    if (remainingProjectCount === 0) {
+      // 项目删除后若没有任何项目继续引用该数据集，同步清理快照，避免云端留下不可见的孤立数据。
+      await transaction.dataset.deleteMany({
+        where: { id: project.datasetId, userId: user.id },
+      })
+      return { count: deletedProject.count, cleanedDataset: true }
+    }
+
+    return { count: deletedProject.count, cleanedDataset: false }
   })
 }
 

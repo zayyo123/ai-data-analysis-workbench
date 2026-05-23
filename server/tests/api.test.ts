@@ -275,6 +275,14 @@ describe('full-stack API MVP', () => {
       headers: { authorization: authHeader },
     })
     expect(deletedProjectResponse.statusCode).toBe(404)
+
+    const deletedDatasetResponse = await app.inject({
+      method: 'GET',
+      url: `/api/datasets/${datasetId}`,
+      headers: { authorization: authHeader },
+    })
+    expect(deletedDatasetResponse.statusCode).toBe(404)
+    expect(deletedDatasetResponse.json<{ error: { code: string } }>().error.code).toBe('DATASET_NOT_FOUND')
   })
 
   it('blocks free users after the daily AI analysis quota is exhausted', async () => {
