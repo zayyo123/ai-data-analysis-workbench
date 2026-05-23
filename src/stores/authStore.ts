@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { fetchCurrentUser, loginWithEmail, registerWithEmail } from '@/services/api/authApi'
+import { changePassword, fetchCurrentUser, loginWithEmail, registerWithEmail, updateProfile } from '@/services/api/authApi'
 import { fetchBillingPlans, fetchUsageSummary, upgradeBillingPlan } from '@/services/api/billingApi'
 import { clearStoredToken, getApiErrorMessage, getStoredToken, isUnauthorizedApiError, setStoredToken } from '@/services/api/httpClient'
 import type { AuthUser, BillingPlan, UsageSummary, UserPlan } from '@/types/auth'
@@ -114,6 +114,44 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  async function updateAccountProfile(input: { name: string }): Promise<void> {
+    if (!token.value) {
+      error.value = '请先登录后再更新账户资料'
+      return
+    }
+
+    loading.value = true
+    error.value = ''
+    try {
+      const response = await updateProfile(input)
+      applyAuthenticatedSession(response)
+    } catch (caughtError) {
+      handleAuthenticatedMutationError(caughtError, '账户资料更新失败')
+      throw caughtError
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function updateAccountPassword(input: { currentPassword: string; newPassword: string }): Promise<void> {
+    if (!token.value) {
+      error.value = '请先登录后再修改密码'
+      return
+    }
+
+    loading.value = true
+    error.value = ''
+    try {
+      const response = await changePassword(input)
+      applyAuthenticatedSession(response)
+    } catch (caughtError) {
+      handleAuthenticatedMutationError(caughtError, '密码修改失败')
+      throw caughtError
+    } finally {
+      loading.value = false
+    }
+  }
+
   function logout(): void {
     token.value = ''
     user.value = null
@@ -127,10 +165,8 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = ''
     try {
       const response = await request()
-      token.value = response.token
-      user.value = response.user
+      applyAuthenticatedSession(response)
       sessionRestored.value = true
-      setStoredToken(response.token)
       await refreshUsage()
       await loadBillingPlans()
     } catch (caughtError) {
@@ -139,6 +175,23 @@ export const useAuthStore = defineStore('auth', () => {
     } finally {
       loading.value = false
     }
+  }
+
+  function applyAuthenticatedSession(response: { token: string; user: AuthUser }): void {
+    token.value = response.token
+    user.value = response.user
+    sessionRestored.value = true
+    setStoredToken(response.token)
+  }
+
+  function handleAuthenticatedMutationError(caughtError: unknown, fallback: string): void {
+    if (isUnauthorizedApiError(caughtError)) {
+      logout()
+      error.value = '登录已过期，请重新登录'
+      return
+    }
+
+    error.value = getApiErrorMessage(caughtError, fallback)
   }
 
   return {
@@ -157,6 +210,8 @@ export const useAuthStore = defineStore('auth', () => {
     refreshUsage,
     loadBillingPlans,
     upgradePlan,
+    updateAccountProfile,
+    updateAccountPassword,
     logout,
   }
 })

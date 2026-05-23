@@ -55,6 +55,75 @@ describe('full-stack API MVP', () => {
     )
   })
 
+  it('updates account profile and changes password', async () => {
+    const registerResponse = await app.inject({
+      method: 'POST',
+      url: '/api/auth/register',
+      payload: {
+        email: 'account-settings@example.com',
+        password: 'password123',
+        name: 'Account Tester',
+      },
+    })
+    expect(registerResponse.statusCode).toBe(200)
+    const authHeader = `Bearer ${registerResponse.json<{ token: string }>().token}`
+
+    const profileResponse = await app.inject({
+      method: 'PATCH',
+      url: '/api/auth/me',
+      headers: { authorization: authHeader },
+      payload: { name: 'Account Owner' },
+    })
+    expect(profileResponse.statusCode).toBe(200)
+    const profileBody = profileResponse.json<{ token: string; user: { name: string } }>()
+    expect(profileBody.user.name).toBe('Account Owner')
+    expect(decodeJwtPayload<{ name?: string }>(profileBody.token).name).toBe('Account Owner')
+
+    const wrongPasswordResponse = await app.inject({
+      method: 'PATCH',
+      url: '/api/auth/password',
+      headers: { authorization: `Bearer ${profileBody.token}` },
+      payload: {
+        currentPassword: 'wrongpass123',
+        newPassword: 'newpass123',
+      },
+    })
+    expect(wrongPasswordResponse.statusCode).toBe(400)
+    expect(wrongPasswordResponse.json<{ error: { code: string } }>().error.code).toBe('PASSWORD_CHANGE_FAILED')
+
+    const passwordResponse = await app.inject({
+      method: 'PATCH',
+      url: '/api/auth/password',
+      headers: { authorization: `Bearer ${profileBody.token}` },
+      payload: {
+        currentPassword: 'password123',
+        newPassword: 'newpass123',
+      },
+    })
+    expect(passwordResponse.statusCode).toBe(200)
+
+    const oldLoginResponse = await app.inject({
+      method: 'POST',
+      url: '/api/auth/login',
+      payload: {
+        email: 'account-settings@example.com',
+        password: 'password123',
+      },
+    })
+    expect(oldLoginResponse.statusCode).toBe(401)
+
+    const newLoginResponse = await app.inject({
+      method: 'POST',
+      url: '/api/auth/login',
+      payload: {
+        email: 'account-settings@example.com',
+        password: 'newpass123',
+      },
+    })
+    expect(newLoginResponse.statusCode).toBe(200)
+    expect(newLoginResponse.json<{ user: { name: string } }>().user.name).toBe('Account Owner')
+  })
+
   it('registers, saves dataset/project, generates AI report and reads usage', async () => {
     const registerResponse = await app.inject({
       method: 'POST',

@@ -3,8 +3,8 @@ import { requireAuth } from '../../auth.js'
 import { env } from '../../config/env.js'
 import { prisma } from '../../prisma.js'
 import { sendError } from '../../utils/errors.js'
-import { loginSchema, registerSchema } from './auth.schema.js'
-import { registerUser, toPublicUser, validateLogin } from './auth.service.js'
+import { changePasswordSchema, loginSchema, registerSchema, updateProfileSchema } from './auth.schema.js'
+import { changeUserPassword, registerUser, toPublicUser, updateUserProfile, validateLogin } from './auth.service.js'
 
 interface RateLimitBucket {
   count: number
@@ -64,6 +64,42 @@ export async function authRoutes(app: FastifyInstance) {
       return { user: toPublicUser(user) }
     } catch {
       return sendError(reply, 401, '登录已过期，请重新登录', 'UNAUTHORIZED')
+    }
+  })
+
+  app.patch('/me', async (request, reply) => {
+    try {
+      const authUser = await requireAuth(request)
+      const parsed = updateProfileSchema.safeParse(request.body)
+      if (!parsed.success) return sendError(reply, 400, '账户资料参数不正确', 'VALIDATION_ERROR')
+
+      const user = await updateUserProfile(authUser.id, parsed.data)
+      const publicUser = toPublicUser(user)
+      const token = app.jwt.sign(publicUser, { expiresIn: env.JWT_EXPIRES_IN })
+      return { token, user: publicUser }
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('Authorization')) {
+        return sendError(reply, 401, '登录已过期，请重新登录', 'UNAUTHORIZED')
+      }
+      return sendError(reply, 400, error instanceof Error ? error.message : '账户资料更新失败', 'PROFILE_UPDATE_FAILED')
+    }
+  })
+
+  app.patch('/password', async (request, reply) => {
+    try {
+      const authUser = await requireAuth(request)
+      const parsed = changePasswordSchema.safeParse(request.body)
+      if (!parsed.success) return sendError(reply, 400, '密码参数不正确', 'VALIDATION_ERROR')
+
+      const user = await changeUserPassword(authUser.id, parsed.data)
+      const publicUser = toPublicUser(user)
+      const token = app.jwt.sign(publicUser, { expiresIn: env.JWT_EXPIRES_IN })
+      return { token, user: publicUser }
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('Authorization')) {
+        return sendError(reply, 401, '登录已过期，请重新登录', 'UNAUTHORIZED')
+      }
+      return sendError(reply, 400, error instanceof Error ? error.message : '密码修改失败', 'PASSWORD_CHANGE_FAILED')
     }
   })
 }

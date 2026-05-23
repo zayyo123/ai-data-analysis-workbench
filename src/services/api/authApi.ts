@@ -23,3 +23,17 @@ export function loginWithEmail(input: { email: string; password: string }): Prom
 export function fetchCurrentUser(): Promise<{ user: AuthUser }> {
   return apiRequest<{ user: AuthUser }>('/auth/me')
 }
+
+export function updateProfile(input: { name: string }): Promise<AuthResponse> {
+  return apiRequest<AuthResponse>('/auth/me', {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  })
+}
+
+export function changePassword(input: { currentPassword: string; newPassword: string }): Promise<AuthResponse> {
+  return apiRequest<AuthResponse>('/auth/password', {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  })
+}

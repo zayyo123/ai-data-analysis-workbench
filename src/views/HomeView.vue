@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, watch } from 'vue'
+import { onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus/es/components/message/index'
 import { ElMessageBox } from 'element-plus/es/components/message-box/index'
@@ -20,6 +20,15 @@ const authStore = useAuthStore()
 const datasetStore = useDatasetStore()
 const dashboardStore = useDashboardStore()
 const projectStore = useProjectStore()
+const accountDialogVisible = ref(false)
+const profileForm = reactive({
+  name: '',
+})
+const passwordForm = reactive({
+  currentPassword: '',
+  newPassword: '',
+  confirmPassword: '',
+})
 
 onMounted(() => {
   if (authStore.isAuthenticated) {
@@ -130,6 +139,56 @@ function logout(): void {
   ElMessage.success('已退出登录')
 }
 
+function openAccountSettings(): void {
+  profileForm.name = authStore.user?.name ?? ''
+  resetPasswordForm()
+  accountDialogVisible.value = true
+}
+
+async function saveProfile(): Promise<void> {
+  const name = profileForm.name.trim()
+  if (!name) {
+    ElMessage.warning('请输入账户昵称')
+    return
+  }
+
+  try {
+    await authStore.updateAccountProfile({ name })
+    ElMessage.success('账户资料已更新')
+  } catch {
+    ElMessage.error(authStore.error || '账户资料更新失败')
+  }
+}
+
+async function savePassword(): Promise<void> {
+  if (passwordForm.newPassword.length < 8) {
+    ElMessage.warning('新密码至少需要 8 位')
+    return
+  }
+
+  if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+    ElMessage.warning('两次输入的新密码不一致')
+    return
+  }
+
+  try {
+    await authStore.updateAccountPassword({
+      currentPassword: passwordForm.currentPassword,
+      newPassword: passwordForm.newPassword,
+    })
+    resetPasswordForm()
+    ElMessage.success('密码已修改，请妥善保存新密码')
+  } catch {
+    ElMessage.error(authStore.error || '密码修改失败')
+  }
+}
+
+function resetPasswordForm(): void {
+  passwordForm.currentPassword = ''
+  passwordForm.newPassword = ''
+  passwordForm.confirmPassword = ''
+}
+
 async function upgradePlan(plan: Exclude<UserPlan, 'FREE'>): Promise<void> {
   try {
     await authStore.upgradePlan(plan)
@@ -159,7 +218,13 @@ async function upgradePlan(plan: Exclude<UserPlan, 'FREE'>): Promise<void> {
           {{ authStore.usageLabel }}
         </el-tag>
         <template v-if="authStore.isAuthenticated">
-          <span class="muted">{{ authStore.user?.email }}</span>
+          <span class="account-summary">
+            <strong>{{ authStore.user?.name || '已登录用户' }}</strong>
+            <span>{{ authStore.user?.email }}</span>
+          </span>
+          <el-button @click="openAccountSettings">
+            账户设置
+          </el-button>
           <el-button @click="logout">
             退出
           </el-button>
@@ -183,6 +248,73 @@ async function upgradePlan(plan: Exclude<UserPlan, 'FREE'>): Promise<void> {
         </el-link>
       </div>
     </header>
+
+    <el-dialog
+      v-model="accountDialogVisible"
+      title="账户设置"
+      width="520px"
+    >
+      <div class="account-settings">
+        <el-form label-position="top">
+          <el-form-item label="邮箱">
+            <el-input
+              :model-value="authStore.user?.email"
+              disabled
+            />
+          </el-form-item>
+          <el-form-item label="昵称">
+            <el-input
+              v-model="profileForm.name"
+              maxlength="80"
+              show-word-limit
+              placeholder="用于项目协作和演示账号展示"
+            />
+          </el-form-item>
+          <el-button
+            type="primary"
+            :loading="authStore.loading"
+            @click="saveProfile"
+          >
+            保存资料
+          </el-button>
+        </el-form>
+
+        <div class="account-divider" />
+
+        <el-form label-position="top">
+          <el-form-item label="当前密码">
+            <el-input
+              v-model="passwordForm.currentPassword"
+              type="password"
+              show-password
+              autocomplete="current-password"
+            />
+          </el-form-item>
+          <el-form-item label="新密码">
+            <el-input
+              v-model="passwordForm.newPassword"
+              type="password"
+              show-password
+              autocomplete="new-password"
+            />
+          </el-form-item>
+          <el-form-item label="确认新密码">
+            <el-input
+              v-model="passwordForm.confirmPassword"
+              type="password"
+              show-password
+              autocomplete="new-password"
+            />
+          </el-form-item>
+          <el-button
+            :loading="authStore.loading"
+            @click="savePassword"
+          >
+            修改密码
+          </el-button>
+        </el-form>
+      </div>
+    </el-dialog>
 
     <section class="page home-grid">
       <div class="panel">
@@ -306,6 +438,44 @@ async function upgradePlan(plan: Exclude<UserPlan, 'FREE'>): Promise<void> {
 
 .upload-error {
   margin-top: 12px;
+}
+
+.account-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.account-divider {
+  height: 1px;
+  background: #e5e7eb;
+}
+
+.account-summary {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.2;
+}
+
+.account-summary strong {
+  max-width: 180px;
+  overflow: hidden;
+  color: #111827;
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-summary span {
+  max-width: 180px;
+  overflow: hidden;
+  color: #6b7280;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .project-list {

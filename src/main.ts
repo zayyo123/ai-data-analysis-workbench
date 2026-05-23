@@ -3,6 +3,7 @@ import '@/assets/styles/base.css'
 
 import { ElAlert } from 'element-plus/es/components/alert/index'
 import { ElButton } from 'element-plus/es/components/button/index'
+import { ElDialog } from 'element-plus/es/components/dialog/index'
 import { ElEmpty } from 'element-plus/es/components/empty/index'
 import { ElForm, ElFormItem } from 'element-plus/es/components/form/index'
 import { ElIcon } from 'element-plus/es/components/icon/index'
@@ -25,6 +26,7 @@ const app = createApp(App)
 const elementPlusComponents = [
   ElAlert,
   ElButton,
+  ElDialog,
   ElEmpty,
   ElForm,
   ElFormItem,
